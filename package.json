@@ -1,0 +1,19 @@
+{
+  "name": "we-hack-lawsphere-main",
+  "version": "1.0.0",
+  "description": "LawSphere is a comprehensive legal access platform designed to connect people with affordable legal services and resources. The platform includes features for finding pro bono lawyers, accessing legal resources, participating in community forums, and getting assistance from an AI legal assistant.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd Backend && npm run dev",
+    "frontend": "cd Frontend && npm run dev",
+    "start": "npm run dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
