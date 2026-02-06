@@ -1,8 +1,4 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const SYSTEM_PROMPT = `You are a legal assistant bot for LegalConnect.
 Provide helpful, clear, and accurate information about legal matters.
@@ -14,49 +10,50 @@ Remember to:
 - Use simple language and avoid excessive legal jargon`;
 
 /**
- * Get response from ChatGPT for legal queries
+ * Get response from Gemini for legal queries
  * @param {string} query - User's legal question
  * @returns {Promise<string>} - AI response
  */
 export const getLegalAssistance = async (query) => {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    console.error("AI Service Error: OPENAI_API_KEY is not defined in .env");
-    return `I apologize, but I'm having trouble processing your question right now. Please try again later or contact a lawyer through our directory for assistance with your legal matter.`;
+    console.error("AI Service Error: GEMINI_API_KEY is not defined in .env");
+    return `I apologize, but I'm having trouble processing your question right now. Please add your Gemini API key to Backend/.env and try again, or contact a lawyer through our directory for assistance with your legal matter.`;
   }
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: query },
-      ],
-      max_tokens: 1024,
-      temperature: 0.2,
-    });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const responseText = completion.choices?.[0]?.message?.content;
+    const prompt = `${SYSTEM_PROMPT}
 
-    if (!responseText) {
-      throw new Error("No response text from OpenAI");
-    }
+User question:
+${query}`;
 
+    const result = await model.generateContent([
+      {
+        role: "user",
+        parts: [{ text: prompt }],
+      },
+    ]);
+
+    const responseText = result.response?.text();
+    if (!responseText) throw new Error("No response text from Gemini");
     return responseText;
   } catch (error) {
-    console.error("AI Service Error:", error.message);
+    console.error("AI Service Error (Gemini):", error.message || error);
 
-    if (error.status === 401) {
-      return `I'm unable to process requests due to an authentication error. Please contact support.`;
+    const msg = (error && error.message) || "";
+    if (msg.includes("API key not valid") || msg.includes("PERMISSION_DENIED")) {
+      return `I'm unable to process requests because the Gemini API key is invalid or missing permissions. Please check your GEMINI_API_KEY.`;
     }
-    if (error.status === 429 || error.message?.includes("rate limit")) {
-      return `I'm temporarily unable to process requests due to high demand. Please try again in a few moments.`;
-    }
-    if (error.status === 402 || error.message?.includes("quota")) {
-      return `I'm temporarily unable to process requests. Please try again later or contact a lawyer through our directory.`;
+    if (msg.includes("RESOURCE_EXHAUSTED") || msg.includes("rate limit")) {
+      return `I'm temporarily unable to process requests due to usage limits. Please try again in a few moments.`;
     }
 
     return `I apologize, but I'm having trouble processing your question right now. Please try again later or contact a lawyer through our directory for assistance with your legal matter.`;
   }
 };
+
+

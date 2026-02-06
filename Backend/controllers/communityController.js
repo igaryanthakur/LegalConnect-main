@@ -1,88 +1,6 @@
 import TopicModel from "../models/Topic.js";
+import UserModel from "../models/User.js";
 import { logger } from "../utils/logger.js";
-
-// Helper to create a reply object for mock data
-function makeReply(id, content, userName, profileImage, createdAt) {
-  return {
-    id,
-    content,
-    user: { name: userName, profileImage: profileImage || "/lawyer.png" },
-    voteScore: 0,
-    createdAt: createdAt || new Date().toISOString(),
-    replies: [],
-  };
-}
-
-// In-memory store: replies must be arrays for topic detail; list API returns reply count
-const mockTopics = [
-  {
-    id: "1",
-    title: "Landlord won't fix heating, what are my options?",
-    category: "Housing & Tenant Issues",
-    user: {
-      name: "John Smith",
-      profileImage: "/lawyer.png",
-    },
-    anonymous: false,
-    replies: [
-      makeReply("r1-1", "You may have a right to withhold rent or repair and deduct in many jurisdictions. Check your local tenant rights.", "Legal Helper", "/lawyer.png", "2023-10-26T10:00:00Z"),
-      makeReply("r1-2", "Document every communication with your landlord and the dates the heating was out. This will help if you need to go to court.", "Tenant Advocate", "/lawyer.png", "2023-10-26T14:20:00Z"),
-    ],
-    views: 234,
-    voteScore: 12,
-    createdAt: "2023-10-25T14:32:00Z",
-    content:
-      "My apartment heating has been broken for two weeks now and temperatures are dropping. I've contacted my landlord multiple times but they keep saying they'll 'get to it'. What are my legal options?",
-  },
-  {
-    id: "2",
-    title: "How does child custody work with an out-of-state move?",
-    category: "Family Law",
-    user: {
-      name: "Parent In Need",
-      profileImage: "/lawyer.png",
-    },
-    anonymous: false,
-    replies: [],
-    views: 128,
-    voteScore: 8,
-    createdAt: "2023-10-24T09:15:00Z",
-    content:
-      "I have joint custody of my children with my ex-spouse. I received a job offer in another state that would significantly improve our financial situation. How can I legally move with my children?",
-  },
-  {
-    id: "3",
-    title: "Employer not paying overtime, what documentation do I need?",
-    category: "Employment Law",
-    user: {
-      name: "Worker Rights",
-      profileImage: "/lawyer.png",
-    },
-    anonymous: false,
-    replies: [],
-    views: 302,
-    voteScore: 15,
-    createdAt: "2023-10-20T16:45:00Z",
-    content:
-      "I've been working 50+ hours weekly for the past three months, but my employer hasn't paid any overtime. What kind of documentation should I gather to support my case?",
-  },
-  {
-    id: "4",
-    title: "Success story: Won my security deposit case in small claims!",
-    category: "Small Claims",
-    user: {
-      name: "Victorious Renter",
-      profileImage: "/lawyer.png",
-    },
-    anonymous: false,
-    replies: [],
-    views: 253,
-    voteScore: 6,
-    createdAt: "2023-10-22T11:20:00Z",
-    content:
-      "Just wanted to share my success story of winning my security deposit case in small claims court. Happy to answer questions about the process!",
-  },
-];
 
 // Helper to safely emit socket events (works in both environments)
 const safeEmitSocketEvent = (event, data, room = null) => {
@@ -110,6 +28,70 @@ const safeEmitSocketEvent = (event, data, room = null) => {
   }
 };
 
+function toIdString(id) {
+  return id ? id.toString() : null;
+}
+
+function normalizeProfileImage(profileImage) {
+  if (!profileImage || profileImage === "default-profile.png") return "/lawyer.png";
+  return profileImage;
+}
+
+function countRepliesRecursive(replies) {
+  if (!Array.isArray(replies)) return 0;
+  return replies.reduce(
+    (sum, r) => sum + 1 + countRepliesRecursive(r.replies),
+    0
+  );
+}
+
+function collectReplyUserIds(replies, out = new Set()) {
+  if (!Array.isArray(replies)) return out;
+  for (const r of replies) {
+    if (r?.user) out.add(toIdString(r.user));
+    if (r?.replies?.length) collectReplyUserIds(r.replies, out);
+  }
+  return out;
+}
+
+function findReplyById(replies, replyId) {
+  if (!Array.isArray(replies)) return null;
+  for (const r of replies) {
+    if (toIdString(r._id) === replyId || r.id === replyId) return r;
+    const found = findReplyById(r.replies, replyId);
+    if (found) return found;
+  }
+  return null;
+}
+
+function formatReply(reply, userById) {
+  const userId = toIdString(reply.user);
+  const user = userById.get(userId);
+  const anonymous = !!reply.anonymous;
+  const upvotes = Array.isArray(reply.upvotes) ? reply.upvotes.length : 0;
+  const downvotes = Array.isArray(reply.downvotes) ? reply.downvotes.length : 0;
+  const voteScore =
+    typeof reply.voteScore === "number" ? reply.voteScore : upvotes - downvotes;
+
+  return {
+    id: toIdString(reply._id) || reply.id,
+    content: reply.content,
+    anonymous,
+    voteScore,
+    createdAt: reply.createdAt,
+    user: {
+      name: anonymous ? "Anonymous" : user?.name || "Anonymous User",
+      profileImage: anonymous
+        ? "/lawyer.png"
+        : normalizeProfileImage(user?.profileImage),
+      createdAt: user?.createdAt,
+    },
+    replies: Array.isArray(reply.replies)
+      ? reply.replies.map((r) => formatReply(r, userById))
+      : [],
+  };
+}
+
 /**
  * @desc    Get forum topics (with filters)
  * @route   GET /api/community/topics
@@ -117,16 +99,37 @@ const safeEmitSocketEvent = (event, data, room = null) => {
  */
 export const getTopics = async (req, res) => {
   try {
-    // For list view, send reply count (number); topic detail API sends full replies array
-    const listData = mockTopics.map((t) => ({
-      ...t,
-      replies: Array.isArray(t.replies) ? t.replies.length : t.replies || 0,
+    const { category, search } = req.query;
+    const filter = {};
+    if (category) filter.category = category;
+    if (search && search.trim()) {
+      filter.$text = { $search: search.trim() };
+    }
+
+    const topics = await TopicModel.find(filter)
+      .sort({ createdAt: -1 })
+      .populate({ path: "user", select: "name profileImage createdAt" });
+
+    const data = topics.map((t) => ({
+      id: toIdString(t._id),
+      title: t.title,
+      category: t.category,
+      content: t.content,
+      anonymous: !!t.anonymous,
+      user: {
+        name: t.anonymous ? "Anonymous" : t.user?.name || "Anonymous User",
+        profileImage: t.anonymous
+          ? "/lawyer.png"
+          : normalizeProfileImage(t.user?.profileImage),
+        createdAt: t.user?.createdAt,
+      },
+      replies: countRepliesRecursive(t.replies),
+      views: t.views || 0,
+      voteScore: typeof t.voteScore === "number" ? t.voteScore : 0,
+      createdAt: t.createdAt,
     }));
-    res.json({
-      success: true,
-      count: listData.length,
-      data: listData,
-    });
+
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     logger.error("Get topics error:", error);
     res.status(500).json({
@@ -192,9 +195,10 @@ export const getCategories = async (req, res) => {
  */
 export const getTopicById = async (req, res) => {
   try {
-    // Find the topic by ID in our mock data
-    const topic = mockTopics.find((t) => t.id === req.params.id);
-
+    const topic = await TopicModel.findById(req.params.id).populate({
+      path: "user",
+      select: "name profileImage createdAt",
+    });
     if (!topic) {
       return res.status(404).json({
         success: false,
@@ -202,9 +206,37 @@ export const getTopicById = async (req, res) => {
       });
     }
 
+    const userIds = collectReplyUserIds(topic.replies);
+    if (topic.user) userIds.add(toIdString(topic.user._id));
+    const users = await UserModel.find({ _id: { $in: Array.from(userIds) } }).select(
+      "name profileImage createdAt"
+    );
+    const userById = new Map(users.map((u) => [toIdString(u._id), u]));
+
+    const formatted = {
+      id: toIdString(topic._id),
+      title: topic.title,
+      category: topic.category,
+      content: topic.content,
+      anonymous: !!topic.anonymous,
+      user: {
+        name: topic.anonymous ? "Anonymous" : topic.user?.name || "Anonymous User",
+        profileImage: topic.anonymous
+          ? "/lawyer.png"
+          : normalizeProfileImage(topic.user?.profileImage),
+        createdAt: topic.user?.createdAt,
+      },
+      replies: Array.isArray(topic.replies)
+        ? topic.replies.map((r) => formatReply(r, userById))
+        : [],
+      views: topic.views || 0,
+      voteScore: typeof topic.voteScore === "number" ? topic.voteScore : 0,
+      createdAt: topic.createdAt,
+    };
+
     res.json({
       success: true,
-      data: topic,
+      data: formatted,
     });
   } catch (error) {
     logger.error("Get topic by ID error:", error);
@@ -224,34 +256,42 @@ export const getTopicById = async (req, res) => {
 export const createTopic = async (req, res) => {
   try {
     const { title, category, content, anonymous } = req.body;
-
-    // Generate a new topic object
-    const newTopic = {
-      id: `${mockTopics.length + 1}${Date.now().toString().substr(-4)}`, // Generate a simple unique ID
+    const topic = await TopicModel.create({
       title,
       category,
       content,
-      anonymous,
-      user: {
-        name: req.user ? req.user.name : "Anonymous User",
-        profileImage: req.user?.profileImage || "/lawyer.png",
-      },
+      anonymous: !!anonymous,
+      user: req.user.id,
       replies: [],
-      views: 0,
-      voteScore: 0,
-      createdAt: new Date().toISOString(),
+    });
+
+    const populated = await TopicModel.findById(topic._id).populate({
+      path: "user",
+      select: "name profileImage createdAt",
+    });
+
+    const formatted = {
+      id: toIdString(populated._id),
+      title: populated.title,
+      category: populated.category,
+      content: populated.content,
+      anonymous: !!populated.anonymous,
+      user: {
+        name: populated.anonymous ? "Anonymous" : populated.user?.name || "Anonymous User",
+        profileImage: populated.anonymous
+          ? "/lawyer.png"
+          : normalizeProfileImage(populated.user?.profileImage),
+        createdAt: populated.user?.createdAt,
+      },
+      replies: 0,
+      views: populated.views || 0,
+      voteScore: populated.voteScore || 0,
+      createdAt: populated.createdAt,
     };
 
-    // Add to our mock data store
-    mockTopics.unshift(newTopic); // Add to beginning of array so it appears first
+    safeEmitSocketEvent("new-topic", formatted);
 
-    // Emit WebSocket event for new topic (safely)
-    safeEmitSocketEvent("new-topic", newTopic);
-
-    res.status(201).json({
-      success: true,
-      data: newTopic,
-    });
+    res.status(201).json({ success: true, data: formatted });
   } catch (error) {
     logger.error("Create topic error:", error);
     res.status(500).json({
@@ -271,10 +311,7 @@ export const addReply = async (req, res) => {
   try {
     const topicId = req.params.id;
     const { content, parentId, anonymous } = req.body;
-
-    // Find the topic in our mock data
-    const topic = mockTopics.find((t) => t.id === topicId);
-
+    const topic = await TopicModel.findById(topicId);
     if (!topic) {
       return res.status(404).json({
         success: false,
@@ -282,78 +319,53 @@ export const addReply = async (req, res) => {
       });
     }
 
-    // Create new reply
     const newReply = {
-      id: `reply-${Date.now()}`,
       content,
-      user: {
-        name: anonymous
-          ? "Anonymous"
-          : req.user
-          ? req.user.name
-          : "Anonymous User",
-        profileImage: anonymous
-          ? "/lawyer.png"
-          : req.user?.profileImage || "/lawyer.png",
-      },
-      anonymous,
-      voteScore: 0,
-      createdAt: new Date().toISOString(),
+      user: req.user.id,
+      anonymous: !!anonymous,
       upvotes: [],
       downvotes: [],
       replies: [],
     };
 
-    // If parentId is provided, it's a reply to another comment
     if (parentId) {
-      // Find the parent comment to add this as a nested reply
-      const findParentAndAddReply = (commentsList) => {
-        for (let comment of commentsList) {
-          if (comment.id === parentId) {
-            if (!comment.replies) comment.replies = [];
-            comment.replies.push(newReply);
-            return true;
-          }
-
-          // Check nested replies
-          if (comment.replies && comment.replies.length > 0) {
-            if (findParentAndAddReply(comment.replies)) {
-              return true;
-            }
-          }
-        }
-        return false;
-      };
-
-      const found = findParentAndAddReply(topic.replies || []);
-
-      if (!found) {
+      const parent = findReplyById(topic.replies, parentId);
+      if (!parent) {
         return res.status(404).json({
           success: false,
           message: "Parent comment not found",
         });
       }
+      if (!parent.replies) parent.replies = [];
+      parent.replies.push(newReply);
     } else {
-      // It's a top-level reply to the topic
-      if (!topic.replies) topic.replies = [];
       topic.replies.push(newReply);
     }
 
-    // Emit WebSocket event for new reply (safely)
+    topic.updatedAt = new Date();
+    await topic.save();
+
+    const savedReply = parentId
+      ? findReplyById(topic.replies, parentId)?.replies?.slice(-1)?.[0]
+      : topic.replies.slice(-1)[0];
+
+    const user = await UserModel.findById(req.user.id).select(
+      "name profileImage createdAt"
+    );
+    const userById = new Map([[toIdString(user._id), user]]);
+    const formattedReply = formatReply(savedReply, userById);
+
     safeEmitSocketEvent(
       "new-reply",
       {
         topicId,
-        reply: newReply,
+        reply: formattedReply,
         parentId,
       },
       `topic-${topicId}`
     );
 
-    res.json({
-      success: true,
-      data: newReply,
-    });
+    res.json({ success: true, data: formattedReply });
   } catch (error) {
     logger.error("Add reply error:", error);
     res.status(500).json({
@@ -372,19 +384,30 @@ export const addReply = async (req, res) => {
 export const upvoteTopic = async (req, res) => {
   try {
     const topicId = req.params.id;
-
-    // Find the topic in our mock data
-    const topic = mockTopics.find((t) => t.id === topicId);
-
+    const topic = await TopicModel.findById(topicId);
     if (!topic) {
       return res.status(404).json({
         success: false,
         message: "Topic not found",
       });
     }
-
-    // Increment vote score
-    topic.voteScore += 1;
+    const userId = req.user.id;
+    const hasUpvoted = topic.upvotes.some((u) => toIdString(u.user) === userId);
+    const hasDownvoted = topic.downvotes.some(
+      (u) => toIdString(u.user) === userId
+    );
+    if (hasUpvoted) {
+      topic.upvotes = topic.upvotes.filter((u) => toIdString(u.user) !== userId);
+    } else {
+      topic.upvotes.push({ user: userId });
+      if (hasDownvoted) {
+        topic.downvotes = topic.downvotes.filter(
+          (u) => toIdString(u.user) !== userId
+        );
+      }
+    }
+    topic.voteScore = topic.upvotes.length - topic.downvotes.length;
+    await topic.save();
 
     // Emit WebSocket event for topic vote update (safely)
     safeEmitSocketEvent("topic-vote-update", {
@@ -417,19 +440,30 @@ export const upvoteTopic = async (req, res) => {
 export const downvoteTopic = async (req, res) => {
   try {
     const topicId = req.params.id;
-
-    // Find the topic in our mock data
-    const topic = mockTopics.find((t) => t.id === topicId);
-
+    const topic = await TopicModel.findById(topicId);
     if (!topic) {
       return res.status(404).json({
         success: false,
         message: "Topic not found",
       });
     }
-
-    // Decrement vote score
-    topic.voteScore -= 1;
+    const userId = req.user.id;
+    const hasDownvoted = topic.downvotes.some(
+      (u) => toIdString(u.user) === userId
+    );
+    const hasUpvoted = topic.upvotes.some((u) => toIdString(u.user) === userId);
+    if (hasDownvoted) {
+      topic.downvotes = topic.downvotes.filter(
+        (u) => toIdString(u.user) !== userId
+      );
+    } else {
+      topic.downvotes.push({ user: userId });
+      if (hasUpvoted) {
+        topic.upvotes = topic.upvotes.filter((u) => toIdString(u.user) !== userId);
+      }
+    }
+    topic.voteScore = topic.upvotes.length - topic.downvotes.length;
+    await topic.save();
 
     // Emit WebSocket event for topic vote update (safely)
     safeEmitSocketEvent("topic-vote-update", {
@@ -463,49 +497,39 @@ export const upvoteReply = async (req, res) => {
   try {
     const topicId = req.params.id;
     const replyId = req.params.replyId;
-
-    // Find the topic
-    const topic = mockTopics.find((t) => t.id === topicId);
-
+    const topic = await TopicModel.findById(topicId);
     if (!topic) {
       return res.status(404).json({
         success: false,
         message: "Topic not found",
       });
     }
-
-    // Find the reply and update its vote score
-    let replyFound = false;
-    let voteScore = 0;
-
-    const findReplyAndUpvote = (commentsList) => {
-      for (let comment of commentsList) {
-        if (comment.id === replyId) {
-          comment.voteScore = (comment.voteScore || 0) + 1;
-          voteScore = comment.voteScore;
-          return true;
-        }
-
-        // Check nested replies
-        if (comment.replies && comment.replies.length > 0) {
-          if (findReplyAndUpvote(comment.replies)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
-
-    if (topic.replies && topic.replies.length > 0) {
-      replyFound = findReplyAndUpvote(topic.replies);
-    }
-
-    if (!replyFound) {
+    const reply = findReplyById(topic.replies, replyId);
+    if (!reply) {
       return res.status(404).json({
         success: false,
         message: "Reply not found",
       });
     }
+    const userId = req.user.id;
+    const hasUpvoted = reply.upvotes?.some((u) => toIdString(u.user) === userId);
+    const hasDownvoted = reply.downvotes?.some(
+      (u) => toIdString(u.user) === userId
+    );
+    if (hasUpvoted) {
+      reply.upvotes = reply.upvotes.filter((u) => toIdString(u.user) !== userId);
+    } else {
+      reply.upvotes = reply.upvotes || [];
+      reply.upvotes.push({ user: userId });
+      if (hasDownvoted) {
+        reply.downvotes = reply.downvotes.filter(
+          (u) => toIdString(u.user) !== userId
+        );
+      }
+    }
+    reply.voteScore = (reply.upvotes?.length || 0) - (reply.downvotes?.length || 0);
+    await topic.save();
+    const voteScore = reply.voteScore;
 
     // Emit WebSocket event for reply vote update (safely)
     safeEmitSocketEvent(
@@ -544,49 +568,39 @@ export const downvoteReply = async (req, res) => {
   try {
     const topicId = req.params.id;
     const replyId = req.params.replyId;
-
-    // Find the topic
-    const topic = mockTopics.find((t) => t.id === topicId);
-
+    const topic = await TopicModel.findById(topicId);
     if (!topic) {
       return res.status(404).json({
         success: false,
         message: "Topic not found",
       });
     }
-
-    // Find the reply and update its vote score
-    let replyFound = false;
-    let voteScore = 0;
-
-    const findReplyAndDownvote = (commentsList) => {
-      for (let comment of commentsList) {
-        if (comment.id === replyId) {
-          comment.voteScore = (comment.voteScore || 0) - 1;
-          voteScore = comment.voteScore;
-          return true;
-        }
-
-        // Check nested replies
-        if (comment.replies && comment.replies.length > 0) {
-          if (findReplyAndDownvote(comment.replies)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
-
-    if (topic.replies && topic.replies.length > 0) {
-      replyFound = findReplyAndDownvote(topic.replies);
-    }
-
-    if (!replyFound) {
+    const reply = findReplyById(topic.replies, replyId);
+    if (!reply) {
       return res.status(404).json({
         success: false,
         message: "Reply not found",
       });
     }
+    const userId = req.user.id;
+    const hasDownvoted = reply.downvotes?.some(
+      (u) => toIdString(u.user) === userId
+    );
+    const hasUpvoted = reply.upvotes?.some((u) => toIdString(u.user) === userId);
+    if (hasDownvoted) {
+      reply.downvotes = reply.downvotes.filter(
+        (u) => toIdString(u.user) !== userId
+      );
+    } else {
+      reply.downvotes = reply.downvotes || [];
+      reply.downvotes.push({ user: userId });
+      if (hasUpvoted) {
+        reply.upvotes = reply.upvotes.filter((u) => toIdString(u.user) !== userId);
+      }
+    }
+    reply.voteScore = (reply.upvotes?.length || 0) - (reply.downvotes?.length || 0);
+    await topic.save();
+    const voteScore = reply.voteScore;
 
     // Emit WebSocket event for reply vote update (safely)
     safeEmitSocketEvent(

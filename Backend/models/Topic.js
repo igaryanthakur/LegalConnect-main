@@ -1,5 +1,55 @@
 import mongoose from "mongoose";
 
+const replySchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    content: {
+      type: String,
+      required: [true, "Reply cannot be empty"],
+    },
+    anonymous: {
+      type: Boolean,
+      default: false,
+    },
+    upvotes: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      },
+    ],
+    downvotes: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      },
+    ],
+    voteScore: {
+      type: Number,
+      default: 0,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: true }
+);
+
+replySchema.add({
+  replies: [replySchema],
+});
+
 const topicSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -66,42 +116,7 @@ const topicSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  replies: [
-    {
-      user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      content: {
-        type: String,
-        required: [true, "Reply cannot be empty"],
-      },
-      anonymous: {
-        type: Boolean,
-        default: false,
-      },
-      upvotes: [
-        {
-          user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-          },
-        },
-      ],
-      downvotes: [
-        {
-          user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-          },
-        },
-      ],
-      createdAt: {
-        type: Date,
-        default: Date.now,
-      },
-    },
-  ],
+  replies: [replySchema],
   createdAt: {
     type: Date,
     default: Date.now,
