@@ -4,7 +4,7 @@ import { getCurrentLanguage } from "../utils/translations.js";
 const API_URL =
   import.meta.env.VITE_APP_Backend_BaseUrl ||
   (import.meta.env.PROD
-    ? "https://lawsphere-api.vercel.app/api"
+    ? "https://legalconnect-api.vercel.app/api"
     : "http://localhost:5000/api");
 
 // Create axios instance

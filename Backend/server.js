@@ -3,7 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
 import connectDB from "./config/db.js";
 import { initAuth } from "./config/auth.js";
 import { logger } from "./utils/logger.js";
@@ -39,8 +38,8 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === "production"
-        ? "https://we-hack-law-sphere.vercel.app" // Frontend URL
-        : "http://localhost:5173", // Vite default port
+        ? "https://legalconnect.vercel.app"
+        : ["http://localhost:5173", "http://localhost:3000"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept-Language"],
@@ -66,6 +65,7 @@ const connectToDatabase = async () => {
 app.use(async (req, res, next) => {
   try {
     const connected = await connectToDatabase();
+    req.dbConnected = connected;
     if (!connected) {
       return res.status(500).json({
         success: false,
@@ -96,48 +96,7 @@ app.use("/api/health", healthRoutes);
 
 // Root route
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to LawSphere API" });
-});
-
-// Debug route to check file paths
-app.get("/api/debug/files", (req, res) => {
-  const uploadsDir = path.join(__dirname, "uploads");
-
-  try {
-    // Check if directory exists
-    if (!fs.existsSync(uploadsDir)) {
-      return res.status(404).json({
-        success: false,
-        message: "Uploads directory not found",
-      });
-    }
-
-    // List profiles directory
-    const profilesDir = path.join(uploadsDir, "profiles");
-    const profileFiles = fs.existsSync(profilesDir)
-      ? fs.readdirSync(profilesDir).map((file) => ({
-          name: file,
-          size: fs.statSync(path.join(profilesDir, file)).size,
-          url: `/uploads/profiles/${file}`,
-          fullUrl: `${req.protocol}://${req.get(
-            "host"
-          )}/uploads/profiles/${file}`,
-        }))
-      : [];
-
-    res.json({
-      success: true,
-      baseUrl: `${req.protocol}://${req.get("host")}`,
-      uploadsPath: uploadsDir,
-      profileFiles,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error listing files",
-      error: error.message,
-    });
-  }
+  res.json({ message: "Welcome to LegalConnect API" });
 });
 
 // Error handling middleware
@@ -165,7 +124,7 @@ if (process.env.NODE_ENV !== "production") {
       server = http.createServer(app);
       io = new Server(server, {
         cors: {
-          origin: "http://localhost:5173",
+          origin: ["http://localhost:5173", "http://localhost:3000"],
           methods: ["GET", "POST", "PUT", "DELETE"],
           credentials: true,
         },

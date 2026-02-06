@@ -1,10 +1,10 @@
-# LawSphere - Legal Aid Platform
+# LegalConnect - Legal Aid Platform
 
-LawSphere is a comprehensive legal access platform designed to connect people with affordable legal services and resources. The platform includes features for finding pro bono lawyers, accessing legal resources, participating in community forums, and getting assistance from an AI legal assistant.
+LegalConnect is a comprehensive legal access platform designed to connect people with affordable legal services and resources. The platform includes features for finding pro bono lawyers, accessing legal resources, participating in community forums, and getting assistance from an AI legal assistant.
 
 ## 🌐 Demo
 
-Visit the live application at [https://we-hack-law-sphere.vercel.app/](https://we-hack-law-sphere.vercel.app/)
+Visit the live application at [https://legalconnect.vercel.app/](https://legalconnect.vercel.app/)
 
 ## ✨ Features
 
@@ -16,7 +16,7 @@ Visit the live application at [https://we-hack-law-sphere.vercel.app/](https://w
 
 ## 🏗️ Architecture
 
-LawSphere uses a modern web stack:
+LegalConnect uses a modern web stack:
 
 - **Frontend**: Vanilla JavaScript with a component-based architecture
 - **Backend**: Node.js with Express.js

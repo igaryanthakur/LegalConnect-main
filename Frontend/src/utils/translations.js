@@ -51,9 +51,9 @@ const translations = {
       "Join discussions, share experiences, and learn from others facing similar legal issues.",
 
     // Footer
-    aboutLawSphere: "About LawSphere",
-    aboutLawSphereDesc:
-      "LawSphere connects those in need with pro bono lawyers and affordable legal services.",
+    aboutLegalConnect: "About LegalConnect",
+    aboutLegalConnectDesc:
+      "LegalConnect connects those in need with pro bono lawyers and affordable legal services.",
     quickLinks: "Quick Links",
     contactUs: "Contact Us",
     allRightsReserved: "All rights reserved",
@@ -91,9 +91,9 @@ const translations = {
       "चर्चाओं में शामिल हों, अनुभव साझा करें और समान कानूनी मुद्दों का सामना करने वाले अन्य लोगों से सीखें।",
 
     // Footer
-    aboutLawSphere: "लॉस्फियर के बारे में",
-    aboutLawSphereDesc:
-      "लॉस्फियर जरूरतमंद लोगों को प्रो बोनो वकीलों और किफायती कानूनी सेवाओं से जोड़ता है।",
+    aboutLegalConnect: "लीगल कनेक्ट के बारे में",
+    aboutLegalConnectDesc:
+      "लीगल कनेक्ट जरूरतमंद लोगों को प्रो बोनो वकीलों और किफायती कानूनी सेवाओं से जोड़ता है।",
     quickLinks: "त्वरित लिंक्स",
     contactUs: "संपर्क करें",
     allRightsReserved: "सर्वाधिकार सुरक्षित",

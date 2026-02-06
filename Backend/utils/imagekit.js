@@ -129,14 +129,6 @@ export const uploadProfile = multer({
     );
     const mimetype = filetypes.test(file.mimetype);
 
-    console.log("File upload request:", {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      validExtension: extname,
-      validMimetype: mimetype,
-    });
-
     if (mimetype && extname) {
       return cb(null, true);
     } else {
@@ -157,8 +149,6 @@ export const processUpload = async (req, res, next) => {
 
   try {
     if (useLocalStorage) {
-      console.log("Processing upload file path:", req.file.path);
-
       // Handle Windows path separators
       const normalizedPath = req.file.path.replace(/\\/g, "/");
 
@@ -176,19 +166,14 @@ export const processUpload = async (req, res, next) => {
 
       const baseUrl =
         process.env.NODE_ENV === "production"
-          ? "https://lawsphere.org"
+          ? "https://legalconnect.org"
           : `http://localhost:${process.env.PORT || 5000}`;
 
       // Update the file object with the web-accessible path
       req.file.originalPath = req.file.path; // Save original for reference
       req.file.path = relativePath;
       req.file.secure_url = `${baseUrl}${relativePath}`;
-
-      console.log("Processed file path for browser access:", req.file.path);
-      console.log("Full accessible URL:", req.file.secure_url);
     } else {
-      // Upload to ImageKit with enhanced error handling
-      console.log("Uploading file to ImageKit...");
 
       // Verify the file exists
       if (!fs.existsSync(req.file.path)) {
@@ -199,27 +184,20 @@ export const processUpload = async (req, res, next) => {
       let fileData;
       try {
         fileData = fs.readFileSync(req.file.path);
-        console.log(
-          `File read successfully: ${req.file.path} (${fileData.length} bytes)`
-        );
       } catch (readError) {
         throw new Error(`Failed to read file: ${readError.message}`);
       }
 
-      // Upload to ImageKit with detailed logging
       if (!imagekit) {
         throw new Error("ImageKit is not initialized");
       }
-      console.log(`Uploading to ImageKit: ${req.file.filename}`);
       const uploadResult = await imagekit.upload({
         file: fileData,
         fileName: req.file.filename,
-        folder: "/lawsphere/profiles",
+        folder: "/legalconnect/profiles",
         useUniqueFileName: true,
         tags: ["profile", "lawyer"],
       });
-
-      console.log("ImageKit upload result:", uploadResult);
 
       // Delete the local temporary file
       try {
@@ -235,8 +213,6 @@ export const processUpload = async (req, res, next) => {
       req.file.path = uploadResult.url;
       req.file.secure_url = uploadResult.url;
       req.file.fileId = uploadResult.fileId;
-
-      console.log("Image uploaded to ImageKit:", req.file.secure_url);
     }
 
     next();
@@ -289,7 +265,7 @@ export const uploadToImageKit = async (filePath, options = {}) => {
     const fileName = path.basename(filePath);
 
     const defaultOptions = {
-      folder: "/lawsphere/uploads",
+      folder: "/legalconnect/uploads",
     };
 
     const uploadOptions = {
@@ -300,7 +276,6 @@ export const uploadToImageKit = async (filePath, options = {}) => {
     };
 
     const result = await imagekit.upload(uploadOptions);
-    console.log("Direct ImageKit upload result:", result.url);
     return result;
   } catch (error) {
     console.error("Direct ImageKit upload error:", error);

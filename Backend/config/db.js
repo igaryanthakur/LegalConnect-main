@@ -13,9 +13,10 @@ const connectDB = async () => {
     const conn = await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      dbName: "legalconnect",
     });
 
-    logger.info(`MongoDB connected: ${conn.connection.host}`);
+    logger.info(`MongoDB connected: ${conn.connection.host} | database: ${conn.connection.name}`);
     return conn;
   } catch (error) {
     logger.error(`MongoDB connection error: ${error.message}`);

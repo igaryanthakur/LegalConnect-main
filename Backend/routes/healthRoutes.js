@@ -13,7 +13,7 @@ router.get("/", (req, res) => {
 
     res.json({
       status: "ok",
-      message: "LawSphere API is running",
+      message: "LegalConnect API is running",
       database: dbStatus,
       env: process.env.NODE_ENV,
       timestamp: new Date().toISOString(),

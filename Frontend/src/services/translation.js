@@ -30,7 +30,7 @@ export async function translateText(text, targetLang) {
     const response = await fetch(
       `${MYMEMORY_API}?q=${encodeURIComponent(
         text
-      )}&langpair=${langPair}&de=admin@lawsphere.org`
+      )}&langpair=${langPair}&de=admin@legalconnect.org`
     );
 
     if (!response.ok) {

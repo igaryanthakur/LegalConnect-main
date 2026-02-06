@@ -279,7 +279,7 @@ function showLocationPermissionPrompt() {
   prompt.className = "geo-permission-prompt";
   prompt.innerHTML = `
     <h3>Improve Your Lawyer Search</h3>
-    <p>Allow LawSphere to access your location to find lawyers near you.</p>
+    <p>Allow LegalConnect to access your location to find lawyers near you.</p>
     <div class="geo-permission-actions">
       <button class="btn btn-outline" id="deny-location">Not Now</button>
       <button class="btn btn-primary" id="allow-location">Allow</button>

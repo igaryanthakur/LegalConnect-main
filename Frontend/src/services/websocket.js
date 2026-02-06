@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 const API_URL = import.meta.env.PROD
-  ? "https://lawsphere-api.vercel.app" // Updated production API URL
+  ? "https://legalconnect-api.vercel.app" // Updated production API URL
   : "http://localhost:5000";
 
 // Create a more robust fallback mechanism

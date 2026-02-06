@@ -119,15 +119,15 @@ export function setupAuth() {
       }
     });
 
-    // Handle form submit
-    document
-      .getElementById("login-form")
-      .addEventListener("submit", async (e) => {
+    // Handle form submit - use form scope to avoid duplicate IDs with other pages
+    const loginForm = modal.querySelector("#login-form");
+    loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        const errorElement = document.getElementById("login-error");
+        const form = e.target;
+        const email = form.querySelector("#email").value;
+        const password = form.querySelector("#password").value;
+        const errorElement = form.querySelector("#login-error");
 
         try {
           errorElement.style.display = "none";
@@ -255,19 +255,18 @@ export function setupAuth() {
       }
     });
 
-    // Handle form submit
-    document
-      .getElementById("signup-form")
-      .addEventListener("submit", async (e) => {
+    // Handle form submit - use form scope to avoid duplicate IDs with other pages
+    const signupForm = modal.querySelector("#signup-form");
+    signupForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const name = document.getElementById("name").value;
-        const email = document.getElementById("email").value;
-        const mobile = document.getElementById("mobile").value;
-        const password = document.getElementById("password").value;
-        const confirmPassword =
-          document.getElementById("confirm-password").value;
-        const errorElement = document.getElementById("signup-error");
+        const form = e.target;
+        const name = form.querySelector("#name").value;
+        const email = form.querySelector("#email").value;
+        const mobile = form.querySelector("#mobile").value;
+        const password = form.querySelector("#password").value;
+        const confirmPassword = form.querySelector("#confirm-password").value;
+        const errorElement = form.querySelector("#signup-error");
 
         try {
           errorElement.style.display = "none";
@@ -327,9 +326,16 @@ export function setupAuth() {
           }
         } catch (error) {
           console.error("Registration error:", error);
-          errorElement.textContent =
-            error.response?.data?.message ||
-            "Registration failed. Please try again.";
+          let message = "Registration failed. Please try again.";
+          if (!error.response) {
+            message =
+              "Cannot reach server. Check that the backend is running on port 5000 and try again.";
+          } else if (error.response.data?.message) {
+            message = error.response.data.message;
+          } else if (error.response.status === 500) {
+            message = "Server error. Check the backend console for details.";
+          }
+          errorElement.textContent = message;
           errorElement.style.display = "block";
         }
       });

@@ -18,7 +18,7 @@ function initApp() {
     <header class="header">
       <div class="container">
         <div class="logo" id="logo-home-link">
-          <h1><i class="fas fa-balance-scale"></i> LawSphere</h1>
+          <h1><i class="fas fa-balance-scale"></i> LegalConnect</h1>
         </div>
         <nav id="main-nav">
           <ul>

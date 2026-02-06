@@ -12,7 +12,7 @@ export function renderAIAssistantPage() {
         <div class="chat-messages" id="chat-messages">
           <div class="message assistant">
             <div class="message-content">
-              <p>Hello! I'm LawSphere's AI Legal Assistant. How can I help you today?</p>
+              <p>Hello! I'm LegalConnect's AI Legal Assistant. How can I help you today?</p>
               <p>I can answer questions about:</p>
               <ul>
                 <li>Basic legal rights and procedures</li>

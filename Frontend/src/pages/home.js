@@ -95,7 +95,7 @@ export function renderHomePage() {
       <div class="testimonial-slider">
         <div class="testimonial card">
           <div class="quote"><i class="fas fa-quote-left"></i></div>
-          <p>LawSphere connected me with a pro bono lawyer who helped me understand my rights as a tenant. I couldn't have navigated the legal system without this support.</p>
+          <p>LegalConnect connected me with a pro bono lawyer who helped me understand my rights as a tenant. I couldn't have navigated the legal system without this support.</p>
           <div class="testimonial-author">
             <strong>Maria G.</strong>, Housing Rights Case
           </div>
@@ -158,18 +158,18 @@ export function renderFooter() {
       <div class="container">
         <div class="footer-content">
           <div class="footer-section about">
-            <h2 data-i18n="aboutLawSphere">${translate("aboutLawSphere")}</h2>
-            <p data-i18n="aboutLawSphereDesc">${translate(
-              "aboutLawSphereDesc"
+            <h2 data-i18n="aboutLegalConnect">${translate("aboutLegalConnect")}</h2>
+            <p data-i18n="aboutLegalConnectDesc">${translate(
+              "aboutLegalConnectDesc"
             )}</p>
             <div class="social-links">
-              <a href="https://x.com/LawSphere123" target="_blank" class="social-link twitter-x">
+              <a href="https://x.com/LegalConnect" target="_blank" class="social-link twitter-x">
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512" fill="currentColor">
                   <path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z"/>
                 </svg>
               </a>
               <a href="https://www.facebook.com/profile.php?id=61574577748529" target="_blank" class="social-link"><i class="fab fa-facebook"></i></a>
-              <a href="https://www.instagram.com/lawspherejustice/?next=%2F" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
+              <a href="https://www.instagram.com/legalconnect/" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
             </div>
           </div>
           <div class="footer-section links">
@@ -196,12 +196,12 @@ export function renderFooter() {
           <div class="footer-section contact">
             <h2 data-i18n="contactUs">${translate("contactUs")}</h2>
             <p><a href="tel:+919876543210" class="contact-link"><i class="fas fa-phone"></i> &nbsp; +91 9876543210</a></p>
-            <p><a href="mailto:contact@lawsphere.org" class="contact-link"><i class="fas fa-envelope"></i> &nbsp; contact@lawsphere.org</a></p>
+            <p><a href="mailto:contact@legalconnect.org" class="contact-link"><i class="fas fa-envelope"></i> &nbsp; contact@legalconnect.org</a></p>
             <p><a href="https://maps.google.com/?q=123 Legal Street, Mumbai, India" target="_blank" class="contact-link location-link"><i class="fas fa-map-marker-alt"></i> &nbsp; 123 Legal Street, Mumbai, India</a></p>
           </div>
         </div>
         <div class="footer-bottom">
-          &copy; ${new Date().getFullYear()} LawSphere | <span data-i18n="allRightsReserved">${translate(
+          &copy; ${new Date().getFullYear()} LegalConnect | <span data-i18n="allRightsReserved">${translate(
     "allRightsReserved"
   )}</span>
         </div>
