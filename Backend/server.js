@@ -114,9 +114,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// For local development only
-if (process.env.NODE_ENV !== "production") {
-  // Create HTTP server only for local development
+// On Vercel serverless: do NOT call app.listen() - the exported app is the request handler
+// On local/traditional hosts: start the server
+const isVercel = process.env.VERCEL === "1";
+if (isVercel) {
+  logger.info("Vercel serverless - app exported as handler");
+} else if (process.env.NODE_ENV !== "production") {
   const createSocketServer = async () => {
     logger.info("Initializing Socket.io server for development");
     try {
@@ -175,8 +178,8 @@ if (process.env.NODE_ENV !== "production") {
 
   createSocketServer();
 } else {
-  // In production (Vercel), don't attempt to use Socket.io
-  logger.info("Production environment detected - WebSockets disabled");
+  // Production on non-Vercel (e.g. Railway, Render)
+  logger.info("Production - starting Express server");
   startExpressServer();
 }
 
