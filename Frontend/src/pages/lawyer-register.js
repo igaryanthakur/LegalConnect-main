@@ -281,7 +281,7 @@ export function renderLawyerRegisterPage() {
             </div>
             <div class="form-group">
               <label for="zip">PIN Code</label>
-              <input type="text" id="zip" name="officeAddress.zipCode" pattern="[0-9]{6}" required>
+              <input type="text" id="zip" name="officeAddress.zipCode" pattern="[0-9]{6}" maxlength="6" inputmode="numeric" required>
               <p class="form-help">6-digit PIN code (e.g., 110001)</p>
             </div>
           </div>
@@ -379,9 +379,11 @@ export function renderLawyerRegisterPage() {
   document.getElementById("state").addEventListener("change", function () {
     const selectedState = this.value;
     const citiesDatalist = document.getElementById("indian-cities");
+    const cityInput = document.getElementById("city");
 
-    // Clear existing options
+    // Clear existing options and reset city input
     citiesDatalist.innerHTML = "";
+    cityInput.value = "";
 
     if (selectedState) {
       // Get cities for the selected state
@@ -394,6 +396,11 @@ export function renderLawyerRegisterPage() {
         citiesDatalist.appendChild(option);
       });
     }
+  });
+
+  // Only allow numbers in PIN code input
+  document.getElementById("zip").addEventListener("input", function (e) {
+    this.value = this.value.replace(/[^0-9]/g, "").slice(0, 6);
   });
 
   // Form submission

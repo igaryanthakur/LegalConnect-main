@@ -1215,7 +1215,7 @@ function showEditProfileModal(lawyer, lawyerId) {
           </div>
           <div class="form-group">
             <label for="zip">PIN Code</label>
-            <input type="text" id="zip" name="officeAddress.zipCode" pattern="[0-9]{6}" value="${
+            <input type="text" id="zip" name="officeAddress.zipCode" pattern="[0-9]{6}" maxlength="6" inputmode="numeric" value="${
               lawyer.officeAddress.zipCode
             }" required>
             <p class="form-help">6-digit PIN code (e.g., 110001)</p>
@@ -1266,6 +1266,11 @@ function showEditProfileModal(lawyer, lawyerId) {
   document.getElementById("state").addEventListener("change", function () {
     const selectedState = this.value;
     // Implementation for loading cities would go here
+  });
+
+  // Only allow numbers in PIN code input
+  document.getElementById("zip").addEventListener("input", function (e) {
+    this.value = this.value.replace(/[^0-9]/g, "").slice(0, 6);
   });
 
   // Handle form submit

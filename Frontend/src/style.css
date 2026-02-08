@@ -14,6 +14,7 @@
   --border-color: #dee2e6;
 
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 17.6px;
   line-height: 1.6;
   color: var(--text-color);
   background-color: var(--light-color);
@@ -69,21 +70,24 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
+  gap: 2rem;
 }
 
 /* Update Logo Styles */
 .logo {
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .logo h1 {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: var(--primary-color);
   margin: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   transition: color 0.3s ease;
+  white-space: nowrap;
 }
 
 .logo:hover h1 {
@@ -91,10 +95,18 @@ a:hover {
 }
 
 /* Navigation */
+#main-nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
 #main-nav ul {
   display: flex;
   list-style: none;
-  gap: 1.5rem;
+  gap: 1.8rem;
+  margin: 0;
+  padding: 0;
 }
 
 #main-nav a {
@@ -102,6 +114,8 @@ a:hover {
   font-weight: 500;
   padding: 0.5rem 0;
   position: relative;
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 #main-nav a.active,
@@ -130,12 +144,13 @@ a:hover {
 /* Buttons */
 .btn {
   padding: 0.6em 1.2em;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -416,18 +431,36 @@ a:hover {
   .header .container {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .logo h1 {
+    font-size: 1.3rem;
+  }
+
+  #main-nav {
+    width: 100%;
   }
 
   #main-nav ul {
-    margin-top: 1rem;
+    margin-top: 0;
     flex-direction: column;
     width: 100%;
+    gap: 0.8rem;
+  }
+
+  #main-nav a {
+    font-size: 0.9rem;
   }
 
   .auth-buttons {
-    margin-top: 1rem;
+    margin-top: 0;
     width: 100%;
     justify-content: center;
+  }
+
+  .user-profile span {
+    font-size: 0.85rem;
   }
 }
 #logout-btn {
@@ -1466,16 +1499,28 @@ button:disabled {
   align-items: center;
   gap: 12px;
 }
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .user-profile .profile-image-circle {
-  width: 30px;
-  height: 30px;
-  margin-right: 8px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.user-profile span {
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 /* Notification bell for lawyers (pending consultations) */
 .notification-bell-wrap {
   position: relative;
   color: var(--dark-color);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   padding: 4px 8px;
   display: inline-flex;
   align-items: center;
@@ -1489,10 +1534,10 @@ button:disabled {
   position: absolute;
   top: -2px;
   right: -2px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  font-size: 0.7rem;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 0.65rem;
   font-weight: 700;
   color: #fff;
   background: var(--danger-color);
@@ -1597,6 +1642,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 .language-selector {
@@ -1607,13 +1653,14 @@ button:disabled {
   background-color: transparent;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  padding: 0.4rem 0.6rem;
+  padding: 0.45rem 0.7rem;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.4rem;
   color: var(--text-color);
   transition: all 0.3s ease;
+  font-size: 0.9rem;
 }
 
 .language-btn:hover {

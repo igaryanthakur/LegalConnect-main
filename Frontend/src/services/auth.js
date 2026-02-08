@@ -336,7 +336,7 @@ export function setupAuth() {
           </div>
           <div class="form-group">
             <label for="mobile">Mobile</label>
-            <input type="text" id="mobile" required placeholder="+91 XXXXX XXXXX">
+            <input type="tel" id="mobile" required placeholder="+91 XXXXX XXXXX">
           </div>
           <div class="form-group">
             <label for="password">Password</label>
