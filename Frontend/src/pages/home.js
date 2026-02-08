@@ -71,19 +71,6 @@ export function renderHomePage() {
         </div>
       </div>
     </section>
-    
-    <section class="testimonials">
-      <h2 class="section-title">Success Stories</h2>
-      <div class="testimonial-slider">
-        <div class="testimonial card">
-          <div class="quote"><i class="fas fa-quote-left"></i></div>
-          <p>LegalConnect connected me with a pro bono lawyer who helped me understand my rights as a tenant. I couldn't have navigated the legal system without this support.</p>
-          <div class="testimonial-author">
-            <strong>Maria G.</strong>, Housing Rights Case
-          </div>
-        </div>
-      </div>
-    </section>
   `;
 
   // Add event listeners

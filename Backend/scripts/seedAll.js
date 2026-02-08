@@ -43,6 +43,8 @@ async function seedAll() {
       "seedDemoUsers.js",
       "seedConsultations.js",
       "seedReviews.js",
+      "seedTopics.js",
+      "seedReplies.js",
     ];
 
     for (const script of scripts) {
@@ -67,12 +69,16 @@ async function seedAll() {
     console.log(
       "  • Reviews for all completed consultations (realistic ratings & comments)",
     );
+    console.log("  • 20 Community Topics (realistic legal discussion threads)");
+    console.log("  • 100+ Replies (helpful comments on community topics)");
     console.log("\nYou can now:");
     console.log("  • Test lawyer search and filtering");
     console.log("  • View consultation management");
     console.log("  • Test payment flows");
     console.log("  • Explore user/lawyer dashboards");
     console.log("  • See lawyer ratings and reviews");
+    console.log("  • Browse active community discussions");
+    console.log("  • Post and reply in forums");
     console.log();
 
     process.exit(0);

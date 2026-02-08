@@ -86,7 +86,20 @@ The project includes comprehensive seed scripts to populate the database with de
    - Automatic average rating calculation for each lawyer
    - Reviews linked to actual clients who had consultations
 
-5. **seedAll.js** - Master script that runs all seed scripts in sequence
+5. **seedTopics.js** - Creates 20 community discussion topics with:
+   - Realistic legal scenarios and questions
+   - Multiple categories (Housing, Employment, Family Law, etc.)
+   - Random views and vote counts
+   - Proper user references for authors
+   - Mix of anonymous and public posts
+
+6. **seedReplies.js** - Adds 100+ replies to community topics with:
+   - Helpful advice, information, and personal experiences
+   - Random vote counts for each reply
+   - Realistic timestamps between topic creation and now
+   - Mix of anonymous and public replies
+
+7. **seedAll.js** - Master script that runs all seed scripts in sequence
 
 ### Running Seed Scripts
 
@@ -100,6 +113,8 @@ node scripts/seedDemoLawyers.js
 node scripts/seedDemoUsers.js
 node scripts/seedConsultations.js
 node scripts/seedReviews.js
+node scripts/seedTopics.js
+node scripts/seedReplies.js
 ```
 
 ### Demo Data Summary
@@ -108,8 +123,8 @@ After seeding, your database will contain:
 
 - **10 Lawyers**: With varied specializations and fee structures
 - **10 Users**: Representing different client profiles
-- **25 Consultations**: Covering all possible consultation states for comprehensive testing
-- **Reviews**: Authentic reviews for all completed consultations with realistic ratings
+- **20 Community Topics**: Real-world legal discussion scenarios across multiple categories
+- **100+ Replies**: Helpful community responses with advice, support, and information
 
 This demo data allows you to:
 
@@ -117,5 +132,9 @@ This demo data allows you to:
 - Explore consultation booking flows
 - Test payment integration with paid/unpaid states
 - View lawyer and user dashboards with real data
+- Test consultation management (accept, reject, complete)
+- View lawyer ratings and reviews from actual clients
+- Browse active community forum discussions
+- Test topic creation, voting, and reply functionality
 - Test consultation management (accept, reject, complete)
 - View lawyer ratings and reviews from actual clients

@@ -320,7 +320,7 @@ function renderTopics(topics) {
     <div class="topic-card" data-id="${topic.id}">
       <div class="topic-vote">
         <button class="vote-up-btn" title="Upvote"><i class="fas fa-chevron-up"></i></button>
-        <div class="vote-score">${topic.voteScore}</div>
+        <div class="vote-score">${topic.voteScore || 0}</div>
         <button class="vote-down-btn" title="Downvote"><i class="fas fa-chevron-down"></i></button>
       </div>
       
@@ -337,17 +337,17 @@ function renderTopics(topics) {
         <div class="topic-meta">
           <div class="topic-stats">
             <span><i class="fas fa-comment"></i> ${typeof topic.replies === "number" ? topic.replies : (topic.replies?.length ?? 0)} replies</span>
-            <span><i class="fas fa-eye"></i> ${topic.views} views</span>
+            <span><i class="fas fa-eye"></i> ${topic.views || 0} views</span>
             <span><i class="fas fa-clock"></i> ${formatTimeAgo(
               topic.createdAt,
             )}</span>
           </div>
           
           <div class="topic-author">
-            <img src="${topic.user.profileImage || "/lawyer.png"}" alt="${
-              topic.user.name || "Anonymous User"
+            <img src="${topic.user?.profileImage || "/lawyer.png"}" alt="${
+              topic.user?.name || "Anonymous User"
             }" class="author-image" onerror="this.src='/lawyer.png'">
-            <span>${topic.user.name || "Anonymous User"}</span>
+            <span>${topic.user?.name || "Anonymous User"}</span>
           </div>
         </div>
       </div>
