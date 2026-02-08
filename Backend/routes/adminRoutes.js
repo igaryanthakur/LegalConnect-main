@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import {
   getDashboardStats,
   getUsers,
@@ -13,8 +14,12 @@ import {
   getConsultations,
   deleteConsultation,
 } from "../controllers/adminController.js";
+import { createResource } from "../controllers/resourceController.js";
 import { protect } from "../config/auth.js";
 import { admin } from "../config/auth.js";
+
+// Configure multer for file uploads (memory storage for ImageKit)
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
@@ -29,6 +34,7 @@ router.delete("/topics/:id", deleteTopic);
 router.get("/lawyers", getLawyers);
 router.delete("/lawyers/:id", deleteLawyer);
 router.get("/resources", getResources);
+router.post("/resources", upload.single("file"), createResource);
 router.delete("/resources/:id", deleteResource);
 router.get("/consultations", getConsultations);
 router.delete("/consultations/:id", deleteConsultation);

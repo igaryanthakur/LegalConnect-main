@@ -4,6 +4,7 @@ import TopicModel from "../models/Topic.js";
 import ResourceModel from "../models/Resource.js";
 import ConsultationModel from "../models/Consultation.js";
 import { logger } from "../utils/logger.js";
+import { deleteFile } from "../utils/imagekit.js";
 
 function toIdString(id) {
   return id ? id.toString() : null;
@@ -21,6 +22,24 @@ function removeReplyFromReplies(replies, replyId) {
     }
   }
   return false;
+}
+
+// Remove all replies from a specific user (recursively)
+function removeUserRepliesFromReplies(replies, userId) {
+  if (!Array.isArray(replies)) return;
+
+  // Remove replies by this user and recurse into nested replies
+  for (let i = replies.length - 1; i >= 0; i--) {
+    const reply = replies[i];
+
+    if (reply.user && toIdString(reply.user) === userId) {
+      // Remove this reply entirely if created by the user
+      replies.splice(i, 1);
+    } else if (Array.isArray(reply.replies)) {
+      // Recurse into nested replies regardless of who created the parent
+      removeUserRepliesFromReplies(reply.replies, userId);
+    }
+  }
 }
 
 /**
@@ -142,9 +161,60 @@ export const deleteUser = async (req, res) => {
       });
     }
 
-    await LawyerModel.findOneAndDelete({ user: userId });
-    await ConsultationModel.deleteMany({ client: userId });
+    // Step 1: Remove all replies/comments made by this user from all topics
+    const allTopics = await TopicModel.find();
+    for (const topic of allTopics) {
+      if (Array.isArray(topic.replies)) {
+        removeUserRepliesFromReplies(topic.replies, userId);
+        topic.markModified("replies");
+        await topic.save();
+      }
+    }
+
+    // Step 1.5: Delete user's profile image from ImageKit
+    if (user.profileImage && user.profileImage !== "default-profile.png") {
+      await deleteFile(user.profileImage);
+    }
+
+    // Step 2: Delete topics created by this user
     await TopicModel.deleteMany({ user: userId });
+
+    // Step 3: Delete their lawyer profile if they have one
+    await LawyerModel.findOneAndDelete({ user: userId });
+
+    // Step 4: Handle consultations where user is the client
+    // Check if lawyer exists before deleting
+    const clientConsultations = await ConsultationModel.find({
+      client: userId,
+    });
+    for (const consultation of clientConsultations) {
+      const lawyerExists = await LawyerModel.findById(consultation.lawyer);
+      if (!lawyerExists) {
+        // If lawyer doesn't exist, delete the orphaned consultation
+        await ConsultationModel.findByIdAndDelete(consultation._id);
+      } else {
+        // If lawyer exists, just delete the consultation but keep lawyer intact
+        await ConsultationModel.findByIdAndDelete(consultation._id);
+      }
+    }
+
+    // Step 5: Handle consultations where user is the lawyer
+    // Check if client exists before deleting
+    const lawyerConsultations = await ConsultationModel.find({
+      lawyer: userId,
+    });
+    for (const consultation of lawyerConsultations) {
+      const clientExists = await UserModel.findById(consultation.client);
+      if (!clientExists) {
+        // If client doesn't exist, delete the orphaned consultation
+        await ConsultationModel.findByIdAndDelete(consultation._id);
+      } else {
+        // If client exists, just delete the consultation
+        await ConsultationModel.findByIdAndDelete(consultation._id);
+      }
+    }
+
+    // Step 6: Delete the user account
     await UserModel.findByIdAndDelete(userId);
 
     res.json({
@@ -304,9 +374,41 @@ export const deleteLawyer = async (req, res) => {
       });
     }
 
-    await ConsultationModel.deleteMany({ lawyer: lawyer._id });
+    const lawyerUserId = lawyer.user.toString();
+
+    // Step 1: Remove all replies/comments made by this lawyer from all topics
+    const allTopics = await TopicModel.find();
+    for (const topic of allTopics) {
+      if (Array.isArray(topic.replies)) {
+        removeUserRepliesFromReplies(topic.replies, lawyerUserId);
+        topic.markModified("replies");
+        await topic.save();
+      }
+    }
+
+    // Step 1.5: Delete lawyer's profile image from ImageKit
+    if (lawyer.profileImage && lawyer.profileImage !== "/lawyer.png") {
+      await deleteFile(lawyer.profileImage);
+    }
+
+    // Step 2: Clean up orphaned consultations (where both client and lawyer are deleted)
+    const lawyerConsultations = await ConsultationModel.find({
+      lawyer: lawyer._id,
+    });
+    for (const consultation of lawyerConsultations) {
+      // Check if the client still exists
+      const clientExists = await UserModel.findById(consultation.client);
+      // If client doesn't exist, both parties are deleted, so delete the consultation
+      if (!clientExists) {
+        await ConsultationModel.findByIdAndDelete(consultation._id);
+      }
+    }
+
+    // Step 3: Delete lawyer profile
     await LawyerModel.findByIdAndDelete(lawyer._id);
-    await UserModel.findByIdAndUpdate(lawyer.user, { role: "user" });
+
+    // Step 4: Change user role back to "user"
+    await UserModel.findByIdAndUpdate(lawyerUserId, { role: "user" });
 
     res.json({
       success: true,
@@ -362,6 +464,12 @@ export const deleteResource = async (req, res) => {
         message: "Resource not found",
       });
     }
+
+    // Delete resource file from ImageKit if it exists
+    if (resource.file) {
+      await deleteFile(resource.file);
+    }
+
     res.json({
       success: true,
       message: "Resource deleted successfully",

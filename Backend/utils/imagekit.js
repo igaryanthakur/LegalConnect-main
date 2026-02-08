@@ -121,7 +121,9 @@ export const processUpload = async (req, res, next) => {
 // Used by some controllers (even if not currently called)
 export const uploadToImageKit = async (filePath, options = {}) => {
   if (!imagekit) {
-    throw new Error("ImageKit is not configured (set USE_LOCAL_STORAGE=false and ImageKit keys).");
+    throw new Error(
+      "ImageKit is not configured (set USE_LOCAL_STORAGE=false and ImageKit keys).",
+    );
   }
   const fileData = fs.readFileSync(filePath);
   const fileName = options.fileName || path.basename(filePath);
@@ -132,5 +134,92 @@ export const uploadToImageKit = async (filePath, options = {}) => {
   });
 };
 
-export default imagekit;
+// Upload file from buffer (for FormData/multipart file uploads)
+export const uploadFile = async (fileBuffer, fileName, fileType = "pdf") => {
+  if (useLocalStorage) {
+    // For local storage, save to temp directory
+    const tempPath = path.join(tempDir, fileName);
+    fs.writeFileSync(tempPath, fileBuffer);
+    const baseUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://legalconnect.org"
+        : `http://localhost:${process.env.PORT || 5000}`;
+    return {
+      url: `${baseUrl}/uploads/temp/${path.basename(tempPath)}`,
+      fileId: null,
+    };
+  }
 
+  if (!imagekit) {
+    throw new Error(
+      "ImageKit is not configured. Please set ImageKit credentials or enable USE_LOCAL_STORAGE.",
+    );
+  }
+
+  try {
+    const uploadResult = await imagekit.upload({
+      file: fileBuffer,
+      fileName: fileName,
+      folder: "/legalconnect/resources",
+      useUniqueFileName: true,
+    });
+
+    return {
+      url: uploadResult.url,
+      fileId: uploadResult.fileId,
+    };
+  } catch (error) {
+    throw new Error(`Failed to upload file to ImageKit: ${error.message}`);
+  }
+};
+
+// Delete file from ImageKit or local storage
+export const deleteFile = async (fileUrl) => {
+  if (!fileUrl) return; // No file to delete
+
+  try {
+    // Handle local files
+    if (fileUrl.includes("localhost") || fileUrl.includes("/uploads/")) {
+      const filePath = fileUrl.split("/uploads/")[1];
+      if (filePath) {
+        const localPath = path.join(uploadsDir, filePath);
+        if (fs.existsSync(localPath)) {
+          fs.unlinkSync(localPath);
+        }
+      }
+      return;
+    }
+
+    // Handle ImageKit files
+    if (fileUrl.includes("imagekit.io")) {
+      if (!imagekit) {
+        console.warn(
+          "ImageKit not configured, cannot delete remote file:",
+          fileUrl,
+        );
+        return;
+      }
+
+      // Extract file path from ImageKit URL
+      // URL format: https://ik.imagekit.io/[urlEndpoint]/[filePath]
+      const urlParts = fileUrl.split("imagekit.io/");
+      if (urlParts.length > 1) {
+        const filePathWithParams = urlParts[1];
+        // Remove query parameters if any
+        const filePath = filePathWithParams.split("?")[0];
+
+        try {
+          await imagekit.deleteFile(filePath);
+        } catch (error) {
+          console.warn("Failed to delete ImageKit file:", error.message);
+          // Don't throw, just log warning
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error deleting file:", error.message);
+    // Don't throw, just log the error
+  }
+};
+
+export default imagekit;

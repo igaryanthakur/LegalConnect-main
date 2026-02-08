@@ -310,6 +310,7 @@ function renderResourcesTable(el, items) {
       <input type="text" class="admin-search-input" id="admin-search" placeholder="Search resources by title, type, or category..." />
       <i class="fas fa-search admin-search-icon"></i>
     </div>
+    <button id="add-resource-btn" class="btn btn-primary" style="margin: 15px 0;"><i class="fas fa-plus"></i> Add New Resource</button>
     <div class="admin-table-container">
       <table class="admin-table">
         <thead>
@@ -317,6 +318,7 @@ function renderResourcesTable(el, items) {
             <th>Title</th>
             <th>Type</th>
             <th>Category</th>
+            <th>File</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -328,7 +330,11 @@ function renderResourcesTable(el, items) {
               <td>${(r.title || "").slice(0, 40)}${(r.title || "").length > 40 ? "..." : ""}</td>
               <td>${r.type || "-"}</td>
               <td>${r.category || "-"}</td>
-              <td><button class="btn btn-sm btn-danger delete-btn" data-id="${r.id}" data-type="resource"><i class="fas fa-trash"></i> Delete</button></td>
+              <td>${r.file ? '<i class="fas fa-file-pdf"></i>' : "-"}</td>
+              <td>
+                ${r.file ? `<a href="${r.file}" target="_blank" class="btn btn-sm btn-outline" title="Download"><i class="fas fa-download"></i></a>` : ""}
+                <button class="btn btn-sm btn-danger delete-btn" data-id="${r.id}" data-type="resource"><i class="fas fa-trash"></i> Delete</button>
+              </td>
             </tr>
           `,
             )
@@ -338,6 +344,13 @@ function renderResourcesTable(el, items) {
       ${items.length === 0 ? '<p class="no-data">No resources found.</p>' : ""}
     </div>
   `;
+
+  // Add event listener for "Add New Resource" button
+  const addBtn = el.querySelector("#add-resource-btn");
+  if (addBtn) {
+    addBtn.addEventListener("click", () => showAddResourceModal());
+  }
+
   attachDeleteHandlers(el, "resource", adminService.deleteResource, () => {
     loadTabContent("resources");
     loadDashboard();
@@ -452,4 +465,146 @@ function attachSearchHandler() {
       noResults.remove();
     }
   });
+}
+
+function showAddResourceModal() {
+  const modal = document.createElement("div");
+  modal.className = "admin-modal-overlay";
+  modal.innerHTML = `
+    <div class="admin-modal" style="max-width: 600px;">
+      <div class="admin-modal-header">
+        <h3>Add New Resource</h3>
+        <button class="admin-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <form id="add-resource-form" class="admin-form" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="resource-title">Title *</label>
+          <input type="text" id="resource-title" name="title" required placeholder="e.g., Know Your Rights: Tenant Basics">
+        </div>
+        
+        <div class="form-group">
+          <label for="resource-description">Description *</label>
+          <textarea id="resource-description" name="description" required placeholder="Brief description of the resource" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="resource-type">Type *</label>
+          <select id="resource-type" name="type" required>
+            <option value="">Select Type</option>
+            <option value="Guide">Guide</option>
+            <option value="Template">Template</option>
+            <option value="Video">Video</option>
+            <option value="Article">Article</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="resource-category">Category *</label>
+          <select id="resource-category" name="category" required>
+            <option value="">Select Category</option>
+            <option value="Housing & Tenant Rights">Housing & Tenant Rights</option>
+            <option value="Family Law">Family Law</option>
+            <option value="Employment Law">Employment Law</option>
+            <option value="Consumer Rights">Consumer Rights</option>
+            <option value="Civil Rights">Civil Rights</option>
+            <option value="Criminal Defense">Criminal Defense</option>
+            <option value="Immigration">Immigration</option>
+            <option value="Traffic & Driving">Traffic & Driving</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="resource-file">PDF File</label>
+          <input type="file" id="resource-file" name="file" accept=".pdf" placeholder="Upload PDF (optional)">
+        </div>
+
+        <div class="form-group">
+          <label for="resource-content">Content/Text (optional)</label>
+          <textarea id="resource-content" name="content" placeholder="Paste content or additional text" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="resource-tags">Tags (comma-separated, optional)</label>
+          <input type="text" id="resource-tags" name="tags" placeholder="e.g., tenant, rights, housing">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Add Resource</button>
+          <button type="button" class="btn btn-outline cancel-btn">Cancel</button>
+        </div>
+        <div id="resource-error-msg" style="color: red; margin-top: 10px; display: none;"></div>
+        <div id="resource-success-msg" style="color: green; margin-top: 10px; display: none;"></div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Close button
+  modal.querySelector(".admin-modal-close").addEventListener("click", () => {
+    document.body.removeChild(modal);
+  });
+
+  // Cancel button
+  modal.querySelector(".cancel-btn").addEventListener("click", () => {
+    document.body.removeChild(modal);
+  });
+
+  // Close on overlay click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+    }
+  });
+
+  // Form submission
+  modal
+    .querySelector("#add-resource-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const errorMsg = modal.querySelector("#resource-error-msg");
+      const successMsg = modal.querySelector("#resource-success-msg");
+      const submitBtn = modal.querySelector("button[type='submit']");
+      const fileInput = modal.querySelector("#resource-file");
+      const contentInput = modal.querySelector("#resource-content");
+
+      try {
+        errorMsg.style.display = "none";
+        successMsg.style.display = "none";
+
+        // Validate that at least file or content is provided
+        if (!fileInput.files.length && !contentInput.value.trim()) {
+          errorMsg.textContent =
+            "Please upload a PDF file or provide content text";
+          errorMsg.style.display = "block";
+          return;
+        }
+
+        submitBtn.disabled = true;
+
+        const formData = new FormData(e.target);
+        const response = await adminService.createResource(formData);
+
+        if (response.data.success) {
+          successMsg.textContent = "Resource created successfully!";
+          successMsg.style.display = "block";
+          setTimeout(() => {
+            document.body.removeChild(modal);
+            loadTabContent("resources");
+            loadDashboard();
+          }, 1500);
+        } else {
+          throw new Error(response.data.message || "Failed to create resource");
+        }
+      } catch (error) {
+        errorMsg.textContent =
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to create resource";
+        errorMsg.style.display = "block";
+        submitBtn.disabled = false;
+      }
+    });
 }

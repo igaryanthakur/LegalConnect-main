@@ -477,10 +477,18 @@ async function viewTopic(topicId) {
     </section>
   `;
 
+  // Scroll to top of the page when opening topic
+  window.scrollTo(0, 0);
+
   // Add event listener for back button
   document.getElementById("back-to-topics").addEventListener("click", () => {
+    // Ensure cleanup is called before navigating away
     if (window.communityCleanup) {
-      window.communityCleanup();
+      try {
+        window.communityCleanup();
+      } catch (err) {
+        console.error("Error during cleanup:", err);
+      }
       window.communityCleanup = null;
     }
     renderCommunityPage();
@@ -489,6 +497,9 @@ async function viewTopic(topicId) {
   try {
     // Load topic details and comments in parallel
     await Promise.all([loadTopicDetail(topicId), loadComments(topicId)]);
+
+    // Ensure scroll position stays at top after content loads
+    window.scrollTo(0, 0);
 
     // Setup WebSocket listeners for this topic
     const cleanupListeners = communityWebSocket.setupTopicDetailListeners(
@@ -532,20 +543,15 @@ async function viewTopic(topicId) {
       },
     );
 
-    // In production, poll for updates every 30 seconds as WebSocket fallback
-    let topicPollInterval = null;
-    if (import.meta.env.PROD) {
-      topicPollInterval = setInterval(() => {
-        loadComments(topicId);
-      }, 30000); // Poll every 30 seconds
-    }
+    // NOTE: Polling is disabled when viewing topic detail because:
+    // 1. WebSocket listeners will notify us of new replies automatically
+    // 2. Polling every 30 seconds causes unnecessary page refreshes and DOM updates
+    // 3. Multiple polling intervals can conflict and cause duplicate event handlers
+    // 4. Real-time updates via WebSocket are more efficient than polling
 
     // Store cleanup function to call when leaving the topic view
     window.communityCleanup = () => {
       cleanupListeners();
-      if (topicPollInterval) {
-        clearInterval(topicPollInterval);
-      }
     };
   } catch (error) {
     console.error("Error loading topic:", error);

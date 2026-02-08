@@ -290,6 +290,10 @@ export const adminService = {
   getLawyers: () => api.get("/admin/lawyers"),
   deleteLawyer: (id) => api.delete(`/admin/lawyers/${id}`),
   getResources: () => api.get("/admin/resources"),
+  createResource: (formData) =>
+    api.post("/admin/resources", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   deleteResource: (id) => api.delete(`/admin/resources/${id}`),
   getConsultations: () => api.get("/admin/consultations"),
   deleteConsultation: (id) => api.delete(`/admin/consultations/${id}`),

@@ -81,27 +81,30 @@ const setupTopicDetailListeners = (topicId, callbacks = {}) => {
   // Join the topic room
   communitySocket.emit("join-topic", topicId);
 
-  // Listen for new replies
-  communitySocket.on("new-reply", (data) => {
+  // Create named handlers to properly remove them later
+  const handleNewReply = (data) => {
     console.log("New reply received:", data);
     if (callbacks.onNewReply && data.topicId === topicId) {
       callbacks.onNewReply(data);
     }
-  });
+  };
 
-  // Listen for reply vote updates
-  communitySocket.on("reply-vote-update", (data) => {
+  const handleReplyVoteUpdate = (data) => {
     console.log("Reply vote update:", data);
     if (callbacks.onReplyVoteUpdate && data.topicId === topicId) {
       callbacks.onReplyVoteUpdate(data);
     }
-  });
+  };
 
-  // Return cleanup function
+  // Listen for new replies and reply votes with named handlers
+  communitySocket.on("new-reply", handleNewReply);
+  communitySocket.on("reply-vote-update", handleReplyVoteUpdate);
+
+  // Return cleanup function that properly removes these specific handlers
   return () => {
     communitySocket.emit("leave-topic", topicId);
-    communitySocket.off("new-reply");
-    communitySocket.off("reply-vote-update");
+    communitySocket.off("new-reply", handleNewReply);
+    communitySocket.off("reply-vote-update", handleReplyVoteUpdate);
   };
 };
 

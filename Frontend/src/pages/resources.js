@@ -241,9 +241,14 @@ function renderResourceCard(resource) {
   `;
 }
 
-function viewResource(fileName) {
-  // Get ImageKit URL with inline display parameter
-  const pdfUrl = pdfUrls[fileName] || `/pdfs/${fileName}`;
+function viewResource(fileInput) {
+  // Handle both full URLs and filenames
+  let pdfUrl = fileInput;
+
+  // If it's a filename, look it up in pdfUrls
+  if (!fileInput.startsWith("http")) {
+    pdfUrl = pdfUrls[fileInput] || `/pdfs/${fileInput}`;
+  }
 
   // For ImageKit URLs, add transformation to ensure inline display
   // Check if URL already has query parameters and use appropriate connector
@@ -255,10 +260,15 @@ function viewResource(fileName) {
   window.open(viewUrl, "_blank");
 }
 
-async function downloadResource(fileName) {
+async function downloadResource(fileInput) {
   try {
-    // Get ImageKit URL for the file
-    const pdfUrl = pdfUrls[fileName] || `/pdfs/${fileName}`;
+    // Handle both full URLs and filenames
+    let pdfUrl = fileInput;
+
+    // If it's a filename, look it up in pdfUrls
+    if (!fileInput.startsWith("http")) {
+      pdfUrl = pdfUrls[fileInput] || `/pdfs/${fileInput}`;
+    }
 
     // For ImageKit URLs, use transformation parameter to force download
     // Check if URL already has query parameters and use appropriate connector
@@ -279,7 +289,10 @@ async function downloadResource(fileName) {
     // Create download link
     const link = document.createElement("a");
     link.href = blobUrl;
-    link.download = fileName;
+
+    // Extract filename from URL or use default
+    const urlParts = fileInput.split("/");
+    link.download = urlParts[urlParts.length - 1] || "resource.pdf";
     document.body.appendChild(link);
     link.click();
 
@@ -289,7 +302,9 @@ async function downloadResource(fileName) {
   } catch (error) {
     console.error("Download error:", error);
     // Fallback: open in new tab
-    const pdfUrl = pdfUrls[fileName] || `/pdfs/${fileName}`;
+    const pdfUrl = fileInput.startsWith("http")
+      ? fileInput
+      : pdfUrls[fileInput] || `/pdfs/${fileInput}`;
     window.open(pdfUrl, "_blank");
   }
 }

@@ -1,110 +1,6 @@
-// Shared mock data (in-memory for now; replace with DB later)
-function getMockResources() {
-  return [
-    {
-      id: "1",
-      title: "Know Your Rights: Tenant Basics",
-      description:
-        "Essential information for renters about lease agreements, maintenance responsibilities, eviction procedures, and security deposits.",
-      type: "Guide",
-      category: "Housing & Tenant Rights",
-      file: "Tenants-Rights.pdf",
-    },
-    {
-      id: "2",
-      title: "Power of Attorney Form",
-      description:
-        "Customize this power of attorney template to authorize someone to make legal decisions on your behalf.",
-      type: "Template",
-      category: "Family Law",
-      file: null,
-    },
-    {
-      id: "3",
-      title: "Discrimination Law Overview",
-      description:
-        "Comprehensive guide to discrimination laws and protections for individuals in various settings.",
-      type: "Guide",
-      category: "Civil Rights",
-      file: "DISCRIMINATION.pdf",
-    },
-    {
-      id: "4",
-      title: "English Constitution",
-      description:
-        "Overview of the English constitutional framework and principles.",
-      type: "Guide",
-      category: "Other",
-      file: "englishconstitution.pdf",
-    },
-    {
-      id: "5",
-      title: "Labour Law Handbook",
-      description:
-        "Guide to employment laws, worker rights, and employer obligations.",
-      type: "Guide",
-      category: "Employment Law",
-      file: "Labour_Law.pdf",
-    },
-    {
-      id: "6",
-      title: "Model Tenancy Act",
-      description:
-        "Complete text of the Model Tenancy Act with explanations and implications for landlords and tenants.",
-      type: "Guide",
-      category: "Housing & Tenant Rights",
-      file: "Model-Tenancy-Act-English.pdf",
-    },
-    {
-      id: "7",
-      title: "Notice of Termination Template",
-      description:
-        "Template for creating a legally valid termination notice for tenancy agreements.",
-      type: "Template",
-      category: "Housing & Tenant Rights",
-      file: "Notice-of-Termination.pdf",
-    },
-    {
-      id: "8",
-      title: "Privacy Law Guide",
-      description:
-        "Understanding privacy laws and your rights to data protection and confidentiality.",
-      type: "Guide",
-      category: "Consumer Rights",
-      file: "PRIVACY_LAW.pdf",
-    },
-    {
-      id: "9",
-      title: "Eviction Rights and Processes",
-      description:
-        "Legal guide to eviction procedures and tenant rights during eviction.",
-      type: "Guide",
-      category: "Housing & Tenant Rights",
-      file: "RIGHT_EVICTION.pdf",
-    },
-    {
-      id: "10",
-      title: "Tenants' Rights Handbook",
-      description:
-        "Comprehensive handbook on tenant rights, responsibilities, and legal remedies.",
-      type: "Guide",
-      category: "Housing & Tenant Rights",
-      file: "Tenants-Rights-Handbook.pdf",
-    },
-    {
-      id: "11",
-      title: "Women's Legal Rights",
-      description:
-        "Guide to legal protections and rights specific to women across various areas of law.",
-      type: "Guide",
-      category: "Civil Rights",
-      file: "Woman_Law.pdf",
-    },
-  ];
-}
-
-// In-memory store (replace with DB when ready)
-const resourceStore = getMockResources();
+import ResourceModel from "../models/Resource.js";
+import { uploadFile } from "../utils/imagekit.js";
+import { logger } from "../utils/logger.js";
 
 /**
  * @desc    Get all resources (with filters)
@@ -114,31 +10,49 @@ const resourceStore = getMockResources();
 export const getResources = async (req, res) => {
   try {
     const { category, type, search } = req.query;
-    let list = [...resourceStore];
+    let query = {};
 
     if (category && category !== "all") {
-      list = list.filter((r) => r.category === category);
+      query.category = category;
     }
     if (type && type !== "all") {
-      list = list.filter((r) => r.type === type);
+      query.type = type;
     }
     if (search && search.trim()) {
-      const term = search.trim().toLowerCase();
-      list = list.filter(
-        (r) =>
-          r.title.toLowerCase().includes(term) ||
-          r.description.toLowerCase().includes(term) ||
-          (r.category && r.category.toLowerCase().includes(term)),
-      );
+      const term = search.trim();
+      query.$or = [
+        { title: { $regex: term, $options: "i" } },
+        { description: { $regex: term, $options: "i" } },
+        { category: { $regex: term, $options: "i" } },
+        { tags: { $in: [new RegExp(term, "i")] } },
+      ];
     }
+
+    const resources = await ResourceModel.find(query)
+      .populate("author", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const data = resources.map((r) => ({
+      id: r._id.toString(),
+      title: r.title,
+      description: r.description,
+      type: r.type,
+      category: r.category,
+      file: r.file,
+      content: r.content,
+      author: r.author?.name || "Unknown",
+      tags: r.tags,
+      createdAt: r.createdAt,
+    }));
 
     res.json({
       success: true,
-      count: list.length,
-      data: list,
+      count: data.length,
+      data,
     });
   } catch (error) {
-    console.error("Get resources error:", error);
+    logger.error("Get resources error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -186,17 +100,129 @@ export const getResourceCategories = async (req, res) => {
  */
 export const getResourceById = async (req, res) => {
   try {
-    // In real app, fetch resource from database
+    const resource = await ResourceModel.findById(req.params.id)
+      .populate("author", "name email")
+      .lean();
+
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        message: "Resource not found",
+      });
+    }
+
+    // Increment views
+    await ResourceModel.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true },
+    );
+
     res.json({
       success: true,
       data: {
-        message: `Resource details for ID: ${req.params.id} will be implemented`,
+        id: resource._id.toString(),
+        title: resource.title,
+        description: resource.description,
+        type: resource.type,
+        category: resource.category,
+        file: resource.file,
+        content: resource.content,
+        author: resource.author?.name || "Unknown",
+        tags: resource.tags,
+        createdAt: resource.createdAt,
       },
     });
   } catch (error) {
+    logger.error("Get resource by ID error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Create new resource (admin only)
+ * @route   POST /api/admin/resources
+ * @access  Private/Admin
+ */
+export const createResource = async (req, res) => {
+  try {
+    const { title, description, type, category, content, tags } = req.body;
+
+    // Validate required fields
+    if (!title || !description || !type || !category) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide title, description, type, and category",
+      });
+    }
+
+    let fileUrl = null;
+
+    // Handle file upload to ImageKit
+    if (req.file) {
+      try {
+        const uploadedFile = await uploadFile(
+          req.file.buffer,
+          `legalconnect/resources/${Date.now()}-${req.file.originalname}`,
+          "pdf",
+        );
+        fileUrl = uploadedFile.url;
+      } catch (uploadError) {
+        logger.error("ImageKit upload error:", uploadError);
+        return res.status(400).json({
+          success: false,
+          message: "Failed to upload file to ImageKit",
+        });
+      }
+    }
+
+    // Validate that either file or content is provided
+    if (!fileUrl && !content) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide either a PDF file or content text",
+      });
+    }
+
+    // Create new resource
+    const resource = await ResourceModel.create({
+      title,
+      description,
+      type,
+      category,
+      content: content || null,
+      file: fileUrl,
+      author: req.user._id,
+      tags: tags ? tags.split(",").map((t) => t.trim()) : [],
+    });
+
+    await resource.populate("author", "name email");
+
+    res.status(201).json({
+      success: true,
+      message: "Resource created successfully",
+      data: {
+        id: resource._id.toString(),
+        title: resource.title,
+        description: resource.description,
+        type: resource.type,
+        category: resource.category,
+        file: resource.file,
+        content: resource.content,
+        author: resource.author?.name,
+        tags: resource.tags,
+        createdAt: resource.createdAt,
+      },
+    });
+  } catch (error) {
+    logger.error("Create resource error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error creating resource",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
@@ -208,6 +234,52 @@ export const getResourceById = async (req, res) => {
  * @access  Public
  */
 export const getResourceFile = async (req, res) => {
+  try {
+    const resource = await ResourceModel.findById(req.params.id).lean();
+
+    if (!resource || !resource.file) {
+      return res.status(404).json({
+        success: false,
+        message: "File not found",
+      });
+    }
+
+    // Increment downloads
+    await ResourceModel.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { downloads: 1 } },
+      { new: true },
+    );
+
+    const download = req.query.download === "true";
+
+    // Return file info with URLs
+    res.json({
+      success: true,
+      data: {
+        fileUrl: resource.file,
+        previewUrl: resource.file,
+        downloadUrl: `${resource.file}?dl=1`,
+        fileName: `${resource.title}.pdf`,
+        download,
+      },
+    });
+  } catch (error) {
+    logger.error("Get resource file error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Get resource file for download or view (Old implementation - can be removed)
+ * @route   GET /api/resources/:id/file
+ * @access  Public
+ */
+export const getResourceFileOld = async (req, res) => {
   try {
     const resourceId = req.params.id;
 
