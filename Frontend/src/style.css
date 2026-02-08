@@ -911,6 +911,15 @@ button:disabled {
   margin: 1rem 0;
 }
 
+.confirm-modal .confirm-message {
+  margin-bottom: 1.25rem;
+}
+.confirm-modal .confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
 .modal-actions {
   margin-top: 20px;
   display: flex;
@@ -1214,12 +1223,29 @@ button:disabled {
   margin-top: 1rem;
 }
 
+.consultation-status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .consultation-status {
   display: inline-block;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 500;
+}
+
+.consultation-paid-badge {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--primary-color);
+  color: white;
 }
 
 .status-pending {
@@ -1240,6 +1266,26 @@ button:disabled {
 .status-completed {
   background-color: var(--info-color);
   color: white;
+}
+
+.status-cancelled {
+  background-color: var(--gray-text);
+  color: white;
+}
+
+.status-rescheduled {
+  background-color: var(--info-color);
+  color: white;
+}
+
+.reschedule-notice-badge {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--warning-color);
+  color: #000;
 }
 
 .no-consultations {

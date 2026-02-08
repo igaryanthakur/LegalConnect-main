@@ -1,5 +1,5 @@
 import { lawyerService, userService } from "../services/api.js";
-import { showToast } from "../utils/toast.js";
+import { showToast, showConfirm } from "../utils/toast.js";
 
 function getProfileImageUrl(profileImage) {
   if (!profileImage || profileImage === "default-profile.png") {
@@ -213,8 +213,8 @@ export async function renderLawyerProfilePage(lawyerId, initialTab) {
               <button class="consultation-filter-btn" data-filter="pending">Pending</button>
               <button class="consultation-filter-btn" data-filter="accepted">Accepted</button>
               <button class="consultation-filter-btn" data-filter="rejected">Rejected</button>
-              <button class="consultation-filter-btn" data-filter="rescheduled">Rescheduled</button>
               <button class="consultation-filter-btn" data-filter="completed">Completed</button>
+              <button class="consultation-filter-btn" data-filter="cancelled">Cancelled</button>
             </div>
             
             <div class="consultations-container">
@@ -355,6 +355,26 @@ export async function renderLawyerProfilePage(lawyerId, initialTab) {
         btn.addEventListener("click", () => {
           const consultationId = btn.dataset.id;
           showRescheduleModal(consultationId, lawyerId);
+        });
+      });
+
+      document.querySelectorAll(".cancel-consultation-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const consultationId = btn.dataset.id;
+          showConfirm(
+            "Cancel this consultation? Fee will be refunded to the user.",
+            async () => {
+              try {
+                await lawyerService.cancelConsultation(consultationId);
+                window.dispatchEvent(new CustomEvent("consultations-updated"));
+                showToast("Consultation cancelled. Fee will be refunded to the user.", "success");
+                renderLawyerProfilePage(lawyerId, "consultations");
+              } catch (error) {
+                console.error("Error cancelling consultation:", error);
+                showToast(error.response?.data?.message || "Failed to cancel consultation.", "error");
+              }
+            }
+          );
         });
       });
     }
@@ -1352,8 +1372,10 @@ function renderConsultations(consultations) {
           </div>
           <h4>${consultation.client.name}</h4>
         </div>
-        <div class="consultation-status status-${consultation.status}">
-          ${capitalizeFirst(consultation.status)}
+        <div class="consultation-status-wrap">
+          <span class="consultation-status status-${consultation.status}">${capitalizeFirst(consultation.status)}</span>
+          ${consultation.paid ? '<span class="consultation-paid-badge">Paid</span>' : ""}
+          ${(consultation.rescheduleRequests || []).length > 0 ? '<span class="reschedule-notice-badge">New date/time</span>' : ""}
         </div>
       </div>
       
@@ -1372,12 +1394,24 @@ function renderConsultations(consultations) {
       </div>
       
       ${
-        consultation.status === "pending"
+        (consultation.status === "pending" || consultation.status === "accepted")
           ? `
       <div class="consultation-actions">
+        ${
+          consultation.status === "pending"
+            ? `
         <button class="btn btn-sm btn-primary accept-btn" data-id="${consultation.id}">Accept</button>
-        <button class="btn btn-sm btn-outline reschedule-btn" data-id="${consultation.id}">Reschedule</button>
+        ${consultation.paid && (consultation.rescheduleRequests || []).length < 1 ? `<button class="btn btn-sm btn-outline reschedule-btn" data-id="${consultation.id}">Reschedule</button>` : ""}
         <button class="btn btn-sm btn-danger reject-btn" data-id="${consultation.id}">Reject</button>
+        `
+            : ""
+        }
+        ${
+          consultation.status === "accepted" && consultation.paid && (consultation.rescheduleRequests || []).length < 1
+            ? `<button class="btn btn-sm btn-outline reschedule-btn" data-id="${consultation.id}">Reschedule</button>`
+            : ""
+        }
+        <button class="btn btn-sm btn-outline cancel-consultation-btn" data-id="${consultation.id}">Cancel</button>
       </div>
       `
           : ""
@@ -1474,7 +1508,7 @@ function showRescheduleModal(consultationId, lawyerId) {
           message,
         });
 
-        showToast("Reschedule request sent to client.", "success");
+        showToast("Reschedule sent. User will see the new date/time in their consultations.", "success");
         document.body.removeChild(modal);
         window.dispatchEvent(new CustomEvent("consultations-updated"));
         renderLawyerProfilePage(lawyerId, "consultations");

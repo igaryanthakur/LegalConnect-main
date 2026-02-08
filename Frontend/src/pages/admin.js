@@ -1,4 +1,5 @@
 import { adminService } from "../services/api.js";
+import { showConfirm } from "../utils/toast.js";
 
 function showToast(message, type = "info") {
   const existing = document.getElementById("admin-toast");
@@ -360,18 +361,19 @@ function renderConsultationsTable(el, items) {
 
 function attachDeleteHandlers(container, type, deleteFn, onSuccess) {
   container.querySelectorAll(".delete-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const id = btn.dataset.id;
-      if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
-      btn.disabled = true;
-      try {
-        await deleteFn(id);
-        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully`, "success");
-        onSuccess();
-      } catch (err) {
-        showToast(err.response?.data?.message || "Delete failed", "error");
-        btn.disabled = false;
-      }
+      showConfirm(`Are you sure you want to delete this ${type}?`, async () => {
+        btn.disabled = true;
+        try {
+          await deleteFn(id);
+          showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully`, "success");
+          onSuccess();
+        } catch (err) {
+          showToast(err.response?.data?.message || "Delete failed", "error");
+          btn.disabled = false;
+        }
+      });
     });
   });
 }

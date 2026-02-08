@@ -1,7 +1,7 @@
 // Import the community service, admin service, and WebSocket service
 import { communityService, adminService } from "../services/api.js";
 import { communityWebSocket } from "../services/websocket.js";
-import { showToast } from "../utils/toast.js";
+import { showToast, showConfirm } from "../utils/toast.js";
 
 export function renderCommunityPage(initialTopicId = null) {
   const mainContent = document.getElementById("main-content");
@@ -1091,17 +1091,19 @@ function setupCommentEventListeners(topicId) {
     btn.addEventListener("click", async () => {
       const comment = btn.closest(".comment");
       const replyId = comment?.dataset?.id;
-      if (!replyId || !confirm("Are you sure you want to delete this reply?")) return;
-      try {
-        btn.disabled = true;
-        await adminService.deleteReply(topicId, replyId);
-        showToast("Reply deleted successfully.");
-        await loadComments(topicId);
-      } catch (error) {
-        const msg = error.response?.data?.message || "Failed to delete reply. Please try again.";
-        showToast(msg);
-        btn.disabled = false;
-      }
+      if (!replyId) return;
+      showConfirm("Are you sure you want to delete this reply?", async () => {
+        try {
+          btn.disabled = true;
+          await adminService.deleteReply(topicId, replyId);
+          showToast("Reply deleted successfully.", "success");
+          await loadComments(topicId);
+        } catch (error) {
+          const msg = error.response?.data?.message || "Failed to delete reply. Please try again.";
+          showToast(msg, "error");
+          btn.disabled = false;
+        }
+      });
     });
   });
 }

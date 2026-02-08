@@ -74,7 +74,7 @@ export function navigateTo(page, params, skipPushState = false) {
       renderLawyerProfilePage(safeParams.id, safeParams.tab);
       break;
     case "user-profile":
-      renderUserProfilePage();
+      renderUserProfilePage(safeParams.tab);
       break;
     case "admin":
       renderAdminPage();

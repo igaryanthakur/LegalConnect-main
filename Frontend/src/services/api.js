@@ -148,6 +148,14 @@ export const userService = {
   getUserConsultations: () => {
     return api.get("/users/consultations");
   },
+  getConsultationUnreadCount: () =>
+    api.get("/users/consultations/unread-count"),
+  markConsultationsRead: () =>
+    api.post("/users/consultations/mark-read"),
+  cancelConsultation: (consultationId) =>
+    api.put(`/consultations/${consultationId}/cancel`),
+  rescheduleConsultation: (consultationId, rescheduleData) =>
+    api.put(`/consultations/${consultationId}/reschedule`, rescheduleData),
 };
 
 // Lawyer API services
@@ -221,6 +229,8 @@ export const lawyerService = {
   getConsultations: (lawyerId) => api.get(`/lawyers/${lawyerId}/consultations`),
   updateConsultation: (consultationId, updateData) =>
     api.put(`/consultations/${consultationId}`, updateData),
+  cancelConsultation: (consultationId) =>
+    api.put(`/consultations/${consultationId}/cancel`),
   rescheduleConsultation: (consultationId, rescheduleData) =>
     api.put(`/consultations/${consultationId}/reschedule`, rescheduleData),
 };

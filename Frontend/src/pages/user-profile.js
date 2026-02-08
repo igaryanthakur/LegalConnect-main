@@ -1,7 +1,7 @@
 import { userService, getProfileImageUrl } from "../services/api.js";
-import { showToast } from "../utils/toast.js";
+import { showToast, showConfirm } from "../utils/toast.js";
 
-export async function renderUserProfilePage() {
+export async function renderUserProfilePage(initialTab) {
   const mainContent = document.getElementById("main-content");
 
   // Show loading state
@@ -77,24 +77,25 @@ export async function renderUserProfilePage() {
           </div>
           
           <div class="profile-tabs">
-            <button class="tab-btn active" data-tab="activities">Activities</button>
-            <button class="tab-btn" data-tab="consultations">Consultations</button>
+            <button class="tab-btn ${initialTab === "consultations" ? "" : "active"}" data-tab="activities">Activities</button>
+            <button class="tab-btn ${initialTab === "consultations" ? "active" : ""}" data-tab="consultations">Consultations</button>
             <button class="tab-btn" data-tab="saved">Saved Resources</button>
           </div>
           
           <div class="profile-content">
-            <div class="tab-content active" id="activities-tab">
+            <div class="tab-content ${initialTab === "consultations" ? "" : "active"}" id="activities-tab">
               <h2>Recent Activities</h2>
               <p>Your recent forum posts, comments, and interactions will appear here.</p>
             </div>
             
-            <div class="tab-content" id="consultations-tab">
+            <div class="tab-content ${initialTab === "consultations" ? "active" : ""}" id="consultations-tab">
               <h2>Your Consultations</h2>
               <div class="consultation-filters">
                 <button class="consultation-filter-btn active" data-filter="all">All</button>
                 <button class="consultation-filter-btn" data-filter="pending">Pending</button>
                 <button class="consultation-filter-btn" data-filter="accepted">Accepted</button>
                 <button class="consultation-filter-btn" data-filter="completed">Completed</button>
+                <button class="consultation-filter-btn" data-filter="cancelled">Cancelled</button>
               </div>
               
               <div class="consultations-container" id="consultations-container">
@@ -132,10 +133,12 @@ export async function renderUserProfilePage() {
       });
     });
 
-    // Load consultations if user clicks on that tab
-    document
-      .querySelector('.tab-btn[data-tab="consultations"]')
-      .addEventListener("click", loadUserConsultations);
+    // Load consultations when user clicks Consultations tab or when landing with tab=consultations
+    const consultationsTab = document.querySelector('.tab-btn[data-tab="consultations"]');
+    consultationsTab.addEventListener("click", () => {
+      loadUserConsultations();
+    });
+    if (initialTab === "consultations") loadUserConsultations();
 
     // Setup edit profile button
     document
@@ -198,24 +201,46 @@ async function loadUserConsultations() {
       });
     });
 
+    // Cancel: confirm no refund, then cancel
+    consultationsContainer.querySelectorAll(".cancel-consultation-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        showConfirm(
+          "Cancel this consultation? No refund will be given.",
+          async () => {
+            try {
+              await userService.cancelConsultation(id);
+              showToast("Consultation cancelled.", "success");
+              loadUserConsultations();
+            } catch (err) {
+              showToast(err.response?.data?.message || "Failed to cancel consultation.", "error");
+            }
+          }
+        );
+      });
+    });
+
+    // Reschedule: open modal, then submit
+    consultationsContainer.querySelectorAll(".reschedule-consultation-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        showUserRescheduleModal(btn.dataset.id, loadUserConsultations);
+      });
+    });
+
     // Add filter functionality
     document.querySelectorAll(".consultation-filter-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        // Remove active class from all filter buttons
         document
           .querySelectorAll(".consultation-filter-btn")
           .forEach((b) => b.classList.remove("active"));
-
-        // Add active class to clicked button
         btn.classList.add("active");
-
-        // Get filter value
-        const filter = btn.dataset.filter;
-
-        // Filter consultations
-        filterConsultations(filter);
+        filterConsultations(btn.dataset.filter);
       });
     });
+
+    // Mark consultations as read when user views the list; refresh notification badge
+    await userService.markConsultationsRead().catch(() => {});
+    window.dispatchEvent(new CustomEvent("consultations-updated"));
   } catch (error) {
     console.error("Error loading consultations:", error);
     consultationsContainer.innerHTML = `
@@ -224,7 +249,7 @@ async function loadUserConsultations() {
   }
 }
 
-// Render consultations (with Pay fee for accepted; payment gateway placeholder)
+// Render consultations (with Pay fee, Cancel, Reschedule)
 function renderConsultations(consultations) {
   if (!consultations || consultations.length === 0) {
     return `<div class="no-consultations">You don't have any consultations yet.</div>`;
@@ -237,7 +262,9 @@ function renderConsultations(consultations) {
           consultation.lawyer?.consultationFee != null
             ? Number(consultation.lawyer.consultationFee)
             : 0;
-        const showPay = consultation.status === "accepted" && fee > 0;
+        const showPay = consultation.status === "accepted" && fee > 0 && !consultation.paid;
+        const canReschedule = (consultation.status === "pending" || consultation.status === "accepted") && consultation.paid && (consultation.rescheduleRequests || []).length < 1;
+        const showActions = ["pending", "accepted"].includes(consultation.status);
         return `
     <div class="consultation-item ${consultation.status}" data-status="${
           consultation.status
@@ -252,8 +279,10 @@ function renderConsultations(consultations) {
           </div>
           <h4>${consultation.lawyer.name}</h4>
         </div>
-        <div class="consultation-status status-${consultation.status}">
-          ${capitalizeFirst(consultation.status)}
+        <div class="consultation-status-wrap">
+          <span class="consultation-status status-${consultation.status}">${capitalizeFirst(consultation.status)}</span>
+          ${consultation.paid ? '<span class="consultation-paid-badge">Paid</span>' : ""}
+          ${(consultation.rescheduleRequests || []).length > 0 ? '<span class="reschedule-notice-badge">New date/time</span>' : ""}
         </div>
       </div>
       
@@ -279,6 +308,16 @@ function renderConsultations(consultations) {
         `
             : ""
         }
+        ${
+          showActions
+            ? `
+        <div class="consultation-actions">
+          ${canReschedule ? `<button type="button" class="btn btn-sm btn-outline reschedule-consultation-btn" data-id="${consultation.id}">Reschedule</button>` : ""}
+          <button type="button" class="btn btn-sm btn-outline cancel-consultation-btn" data-id="${consultation.id}">Cancel</button>
+        </div>
+        `
+            : ""
+        }
       </div>
     </div>
   `;
@@ -296,6 +335,60 @@ function filterConsultations(filter) {
       item.style.display = "block";
     } else {
       item.style.display = "none";
+    }
+  });
+}
+
+// Reschedule modal for user (status will go back to pending; lawyer must accept)
+function showUserRescheduleModal(consultationId, onSuccess) {
+  const modal = document.createElement("div");
+  modal.classList.add("modal");
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Request Reschedule</h2>
+      <p class="form-help">Your request will set the consultation back to pending. The lawyer will need to accept the new time.</p>
+      <form id="user-reschedule-form">
+        <div class="form-group">
+          <label for="user-reschedule-date">New Date</label>
+          <input type="date" id="user-reschedule-date" required min="${new Date().toISOString().split("T")[0]}">
+        </div>
+        <div class="form-group">
+          <label for="user-reschedule-time">New Time</label>
+          <select id="user-reschedule-time" required>
+            <option value="">Select a time</option>
+            <option value="9:00">9:00 AM</option>
+            <option value="10:00">10:00 AM</option>
+            <option value="11:00">11:00 AM</option>
+            <option value="13:00">1:00 PM</option>
+            <option value="14:00">2:00 PM</option>
+            <option value="15:00">3:00 PM</option>
+            <option value="16:00">4:00 PM</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="user-reschedule-message">Message to lawyer</label>
+          <textarea id="user-reschedule-message" rows="3" placeholder="Reason for reschedule (optional)"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Request Reschedule</button>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.querySelector(".close").addEventListener("click", () => document.body.removeChild(modal));
+  modal.addEventListener("click", (e) => { if (e.target === modal) document.body.removeChild(modal); });
+  document.getElementById("user-reschedule-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const date = document.getElementById("user-reschedule-date").value;
+    const time = document.getElementById("user-reschedule-time").value;
+    const message = document.getElementById("user-reschedule-message").value.trim();
+    try {
+      await userService.rescheduleConsultation(consultationId, { date, time, message: message || undefined });
+      document.body.removeChild(modal);
+      showToast("Reschedule requested. Lawyer will need to accept the new time.", "success");
+      if (typeof onSuccess === "function") onSuccess();
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to request reschedule.", "error");
     }
   });
 }

@@ -31,14 +31,10 @@ export function setupAuth() {
     const isLawyer = user.role === "lawyer";
     authContainer.innerHTML = `
       <div class="user-profile header-auth-row">
-        ${
-          isLawyer
-            ? `<a href="#" id="consultation-notification-icon" class="notification-bell-wrap" title="Consultation requests" aria-label="Consultation requests">
+        <a href="#" id="consultation-notification-icon" class="notification-bell-wrap" title="${isLawyer ? "Consultation requests" : "Consultation updates"}" aria-label="${isLawyer ? "Consultation requests" : "Consultation updates"}">
           <i class="fas fa-bell"></i>
           <span id="consultation-notification-badge" class="notification-badge">0</span>
-        </a>`
-            : ""
-        }
+        </a>
         <div class="profile-image-circle" id="profile-icon">
           <img src="${getProfileImageUrl(user.profileImage)}" alt="${
       user.name
@@ -97,15 +93,36 @@ export function setupAuth() {
       }
     });
 
-    // For lawyers: load pending consultation count and link notification icon to lawyer profile (opens Consultations tab)
-    if (isLawyer) {
-      const badgeEl = document.getElementById("consultation-notification-badge");
-      const bellEl = document.getElementById("consultation-notification-icon");
-      (async () => {
-        try {
+    // Notification bell: lawyer = pending count (link to lawyer profile); user = unread updates count (link to user profile consultations)
+    const badgeEl = document.getElementById("consultation-notification-badge");
+    const bellEl = document.getElementById("consultation-notification-icon");
+    if (bellEl) {
+      bellEl.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (user.role === "lawyer") {
+          lawyerService.getMyLawyerProfile().then((res) => {
+            const lawyerId = res.data?.data?.id;
+            import("../components/navigation.js").then((module) => {
+              module.navigateTo(lawyerId ? "lawyer-profile" : "user-profile", lawyerId ? { id: lawyerId, tab: "consultations" } : { tab: "consultations" });
+            });
+          }).catch(() => {
+            import("../components/navigation.js").then((module) => {
+              module.navigateTo("user-profile", { tab: "consultations" });
+            });
+          });
+        } else {
+          import("../components/navigation.js").then((module) => {
+            module.navigateTo("user-profile", { tab: "consultations" });
+          });
+        }
+      });
+    }
+    (async () => {
+      try {
+        if (isLawyer) {
           const meRes = await lawyerService.getMyLawyerProfile();
           const lawyerId = meRes.data?.data?.id;
-          if (!lawyerId) return;
+          if (!lawyerId) { if (badgeEl) badgeEl.style.display = "none"; return; }
           const consRes = await lawyerService.getConsultations(lawyerId);
           const list = consRes.data?.data || [];
           const pending = list.filter((c) => c.status === "pending").length;
@@ -113,19 +130,7 @@ export function setupAuth() {
             badgeEl.textContent = pending > 99 ? "99+" : String(pending);
             badgeEl.style.display = pending > 0 ? "inline-flex" : "none";
           }
-          if (bellEl) {
-            bellEl.addEventListener("click", (e) => {
-              e.preventDefault();
-              import("../components/navigation.js").then((module) => {
-                module.navigateTo("lawyer-profile", {
-                  id: lawyerId,
-                  tab: "consultations",
-                });
-              });
-            });
-          }
-          // When lawyer accepts/rejects/reschedules, refresh the badge count
-          const refreshBadge = async () => {
+          window.addEventListener("consultations-updated", async () => {
             try {
               const res = await lawyerService.getConsultations(lawyerId);
               const list = res.data?.data || [];
@@ -136,14 +141,31 @@ export function setupAuth() {
                 badge.style.display = pending > 0 ? "inline-flex" : "none";
               }
             } catch (_) {}
-          };
-          window.addEventListener("consultations-updated", refreshBadge);
-        } catch (err) {
-          console.error("Failed to load lawyer consultations for notification:", err);
-          if (badgeEl) badgeEl.style.display = "none";
+          });
+        } else {
+          const res = await userService.getConsultationUnreadCount();
+          const count = res.data?.data?.count ?? 0;
+          if (badgeEl) {
+            badgeEl.textContent = count > 99 ? "99+" : String(count);
+            badgeEl.style.display = count > 0 ? "inline-flex" : "none";
+          }
+          window.addEventListener("consultations-updated", async () => {
+            try {
+              const r = await userService.getConsultationUnreadCount();
+              const n = r.data?.data?.count ?? 0;
+              const badge = document.getElementById("consultation-notification-badge");
+              if (badge) {
+                badge.textContent = n > 99 ? "99+" : String(n);
+                badge.style.display = n > 0 ? "inline-flex" : "none";
+              }
+            } catch (_) {}
+          });
         }
-      })();
-    }
+      } catch (err) {
+        console.error("Failed to load notification count:", err);
+        if (badgeEl) badgeEl.style.display = "none";
+      }
+    })();
   }
 
   function showLoginModal() {
