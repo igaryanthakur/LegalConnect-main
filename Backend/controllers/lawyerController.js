@@ -370,8 +370,7 @@ export const getLawyerById = async (req, res) => {
 
     // Use frontend-valid default image
     const profileImage =
-      lawyer.profileImage &&
-      lawyer.profileImage !== "/lawyer.png"
+      lawyer.profileImage && lawyer.profileImage !== "/lawyer.png"
         ? lawyer.profileImage
         : "/lawyer.png";
 

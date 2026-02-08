@@ -289,7 +289,9 @@ async function seedLawyers() {
     // Find the demo admin user
     const adminUser = await UserModel.findOne({ email: "demo@gmail.in" });
     if (!adminUser) {
-      console.log("❌ Admin user not found. Please run cleanupDatabase.js first.");
+      console.log(
+        "❌ Admin user not found. Please run cleanupDatabase.js first.",
+      );
       process.exit(1);
     }
 
@@ -336,16 +338,17 @@ async function seedLawyers() {
         });
         lawyerCount++;
       } catch (error) {
-        console.error(`Error creating lawyer ${lawyerData.name}:`, error.message);
+        console.error(
+          `Error creating lawyer ${lawyerData.name}:`,
+          error.message,
+        );
       }
     }
 
     console.log(`\n✓ Seeded ${lawyerCount} demo lawyers successfully!`);
     console.log("\nLawyer Details:");
     createdLawyers.forEach((lawyer, index) => {
-      console.log(
-        `\n[${index + 1}] ${lawyer.name}`,
-      );
+      console.log(`\n[${index + 1}] ${lawyer.name}`);
       console.log(`    Email: ${lawyer.email}`);
       console.log(`    Practice Areas: ${lawyer.areas}`);
       console.log(`    Location: ${lawyer.location}`);

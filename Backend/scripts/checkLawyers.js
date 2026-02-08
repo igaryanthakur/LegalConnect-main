@@ -16,9 +16,9 @@ async function checkLawyers() {
     const lawyers = await LawyerModel.find().populate("user", "name email");
 
     console.log(`Found ${lawyers.length} lawyers:\n`);
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
     console.log("LOGIN CREDENTIALS FOR ALL LAWYERS:");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
     console.log("Password for all lawyers: password123\n");
 
     lawyers.forEach((lawyer, index) => {
@@ -29,9 +29,9 @@ async function checkLawyers() {
       console.log();
     });
 
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
     console.log("ADMIN LOGIN:");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
     const admin = await UserModel.findOne({ role: "admin" });
     if (admin) {
       console.log(`Email: ${admin.email}`);

@@ -53,7 +53,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept-Language"],
-  })
+  }),
 );
 
 // Connect to MongoDB only when needed (for Vercel)
@@ -153,7 +153,7 @@ if (isVercel) {
       // Socket.io event handlers
       communityNamespace.on("connection", (socket) => {
         logger.info(
-          `New client connected to community namespace: ${socket.id}`
+          `New client connected to community namespace: ${socket.id}`,
         );
 
         socket.on("join-topic", (topicId) => {
@@ -179,7 +179,7 @@ if (isVercel) {
       const PORT = process.env.PORT || 5000;
       server.listen(PORT, () => {
         logger.info(
-          `Server with socket.io running on port ${PORT} in ${process.env.NODE_ENV} mode`
+          `Server with socket.io running on port ${PORT} in ${process.env.NODE_ENV} mode`,
         );
       });
     } catch (error) {
@@ -200,7 +200,7 @@ function startExpressServer() {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     logger.info(
-      `Express server running on port ${PORT} in ${process.env.NODE_ENV} mode`
+      `Express server running on port ${PORT} in ${process.env.NODE_ENV} mode`,
     );
   });
 }
