@@ -430,6 +430,27 @@ function renderConsultations(consultations) {
           : 0;
       const showPay =
         consultation.status === "accepted" && fee > 0 && !consultation.paid;
+
+      // Debug logging for pay button visibility
+      console.log(
+        `Consultation ${consultation.id} - Pay button visibility check:`,
+        {
+          status: consultation.status,
+          fee: fee,
+          paid: consultation.paid,
+          showPay: showPay,
+          reason: !showPay
+            ? consultation.status !== "accepted"
+              ? "Status is not 'accepted'"
+              : fee <= 0
+                ? "Consultation fee is 0 (free consultation)"
+                : consultation.paid
+                  ? "Consultation already paid"
+                  : "Unknown"
+            : "Pay button will show",
+        },
+      );
+
       const canReschedule =
         (consultation.status === "pending" ||
           consultation.status === "accepted") &&
