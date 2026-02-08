@@ -1,5 +1,6 @@
 import { lawyerService } from "../services/api.js";
 import { navigateTo } from "../components/navigation.js";
+import { showToast } from "../utils/toast.js";
 
 let userLocation = null;
 
@@ -420,6 +421,11 @@ async function loadLawyers(filters = {}) {
         const lawyerId = this.closest(".lawyer-card").dataset.id;
         const lawyerName =
           this.closest(".lawyer-card").querySelector("h3").textContent;
+        if (!localStorage.getItem("user")) {
+          showToast("Please log in to request a consultation.", "info");
+          document.getElementById("login-btn")?.click();
+          return;
+        }
         showSchedulingModal(lawyerName, lawyerId);
       });
     });
@@ -538,12 +544,36 @@ function showSchedulingModal(lawyerName, lawyerId) {
     }
   });
 
-  // Handle form submit
-  document.getElementById("scheduling-form").addEventListener("submit", (e) => {
+  // Handle form submit - create consultation via API
+  document.getElementById("scheduling-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    alert(
-      `Consultation request sent to ${lawyerName}. They will contact you to confirm.`
-    );
-    document.body.removeChild(modal);
+    const dateEl = document.getElementById("consultation-date");
+    const timeEl = document.getElementById("consultation-time");
+    const typeEl = document.getElementById("consultation-type");
+    const notesEl = document.getElementById("consultation-notes");
+    const submitBtn = modal.querySelector('button[type="submit"]');
+    const date = dateEl?.value;
+    const time = timeEl?.value;
+    const type = typeEl?.value;
+    const notes = (notesEl?.value || "").trim();
+    if (!date || !time || !type) {
+      showToast("Please fill in date, time, and consultation type.", "error");
+      return;
+    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending...";
+    try {
+      await lawyerService.scheduleConsultation(lawyerId, { date, time, type, notes: notes || undefined });
+      document.body.removeChild(modal);
+      showToast(`Consultation request sent to ${lawyerName}. They will confirm or respond soon.`, "success");
+    } catch (err) {
+      console.error("Schedule consultation error:", err);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Request Consultation";
+      const msg = err.response?.status === 401
+        ? "Please log in to request a consultation."
+        : (err.response?.data?.message || "Failed to send request. Please try again.");
+      showToast(msg, "error");
+    }
   });
 }

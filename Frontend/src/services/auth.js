@@ -1,4 +1,5 @@
-import { userService } from "./api.js";
+import { userService, lawyerService, getProfileImageUrl } from "./api.js";
+import { showToast } from "../utils/toast.js";
 
 import { translate } from "../utils/translations.js";
 import { loginSchema, signupSchema } from "../utils/formValidation.js";
@@ -27,10 +28,19 @@ export function setupAuth() {
     if (adminNavItem) {
       adminNavItem.style.display = user.role === "admin" ? "" : "none";
     }
+    const isLawyer = user.role === "lawyer";
     authContainer.innerHTML = `
-      <div class="user-profile">
+      <div class="user-profile header-auth-row">
+        ${
+          isLawyer
+            ? `<a href="#" id="consultation-notification-icon" class="notification-bell-wrap" title="Consultation requests" aria-label="Consultation requests">
+          <i class="fas fa-bell"></i>
+          <span id="consultation-notification-badge" class="notification-badge">0</span>
+        </a>`
+            : ""
+        }
         <div class="profile-image-circle" id="profile-icon">
-          <img src="${user.profileImage || "/lawyer.png"}" alt="${
+          <img src="${getProfileImageUrl(user.profileImage)}" alt="${
       user.name
     }" onerror="this.src='/lawyer.png'" crossorigin="anonymous">
         </div>
@@ -63,10 +73,77 @@ export function setupAuth() {
     };
 
     profileIcon.addEventListener("click", () => {
-      import("../components/navigation.js").then((module) => {
-        module.navigateTo("user-profile");
-      });
+      if (user.role === "lawyer") {
+        lawyerService
+          .getMyLawyerProfile()
+          .then((res) => {
+            const lawyerId = res.data?.data?.id;
+            import("../components/navigation.js").then((module) => {
+              module.navigateTo(
+                lawyerId ? "lawyer-profile" : "user-profile",
+                lawyerId ? { id: lawyerId } : {}
+              );
+            });
+          })
+          .catch(() => {
+            import("../components/navigation.js").then((module) => {
+              module.navigateTo("user-profile");
+            });
+          });
+      } else {
+        import("../components/navigation.js").then((module) => {
+          module.navigateTo("user-profile");
+        });
+      }
     });
+
+    // For lawyers: load pending consultation count and link notification icon to lawyer profile (opens Consultations tab)
+    if (isLawyer) {
+      const badgeEl = document.getElementById("consultation-notification-badge");
+      const bellEl = document.getElementById("consultation-notification-icon");
+      (async () => {
+        try {
+          const meRes = await lawyerService.getMyLawyerProfile();
+          const lawyerId = meRes.data?.data?.id;
+          if (!lawyerId) return;
+          const consRes = await lawyerService.getConsultations(lawyerId);
+          const list = consRes.data?.data || [];
+          const pending = list.filter((c) => c.status === "pending").length;
+          if (badgeEl) {
+            badgeEl.textContent = pending > 99 ? "99+" : String(pending);
+            badgeEl.style.display = pending > 0 ? "inline-flex" : "none";
+          }
+          if (bellEl) {
+            bellEl.addEventListener("click", (e) => {
+              e.preventDefault();
+              import("../components/navigation.js").then((module) => {
+                module.navigateTo("lawyer-profile", {
+                  id: lawyerId,
+                  tab: "consultations",
+                });
+              });
+            });
+          }
+          // When lawyer accepts/rejects/reschedules, refresh the badge count
+          const refreshBadge = async () => {
+            try {
+              const res = await lawyerService.getConsultations(lawyerId);
+              const list = res.data?.data || [];
+              const pending = list.filter((c) => c.status === "pending").length;
+              const badge = document.getElementById("consultation-notification-badge");
+              if (badge) {
+                badge.textContent = pending > 99 ? "99+" : String(pending);
+                badge.style.display = pending > 0 ? "inline-flex" : "none";
+              }
+            } catch (_) {}
+          };
+          window.addEventListener("consultations-updated", refreshBadge);
+        } catch (err) {
+          console.error("Failed to load lawyer consultations for notification:", err);
+          if (badgeEl) badgeEl.style.display = "none";
+        }
+      })();
+    }
   }
 
   function showLoginModal() {
@@ -404,7 +481,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (urlParams.get("auth") === "error") {
     console.log("Auth error parameter detected, clearing token");
     localStorage.removeItem("user");
-    alert("Your session has expired. Please log in again.");
+    showToast("Your session has expired. Please log in again.", "info");
     // After a brief delay, redirect to home page without the query parameter
     setTimeout(() => {
       window.location.href = window.location.pathname;

@@ -2,6 +2,7 @@ import express from "express";
 import {
   getLawyers,
   getLawyerById,
+  getMyLawyerProfile,
   scheduleLawyerConsultation,
   addLawyerReview,
   createLawyer,
@@ -18,7 +19,8 @@ import {
 
 const router = express.Router();
 
-// Lawyer routes
+// Lawyer routes (me must be before :id)
+router.get("/me", protect, getMyLawyerProfile);
 router.get("/", getLawyers);
 router.get("/:id", getLawyerById);
 router.post("/", protect, createLawyer);

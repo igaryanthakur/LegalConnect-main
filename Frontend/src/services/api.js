@@ -14,6 +14,26 @@ const API_URL =
     ? "https://legal-connect-main-backend.vercel.app/api"
     : "http://localhost:5000/api");
 
+/** Backend origin (no /api) for resolving relative asset URLs (e.g. profile images). */
+const BACKEND_ORIGIN = API_URL.replace(/\/api\/?$/, "");
+
+/**
+ * Returns a display URL for a profile image. Handles absolute URLs, relative paths, and fallback.
+ * Use for header and profile page so images load when backend returns relative paths (e.g. /uploads/...).
+ */
+export function getProfileImageUrl(profileImage) {
+  const fallback = "/lawyer.png";
+  if (!profileImage || profileImage === "default-profile.png") return fallback;
+  if (
+    profileImage.startsWith("http://") ||
+    profileImage.startsWith("https://")
+  ) {
+    return profileImage;
+  }
+  const path = profileImage.startsWith("/") ? profileImage : `/${profileImage}`;
+  return `${BACKEND_ORIGIN}${path}`;
+}
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_URL,
@@ -171,6 +191,7 @@ export const lawyerService = {
     }
   },
   getLawyerById: (id) => api.get(`/lawyers/${id}`),
+  getMyLawyerProfile: () => api.get("/lawyers/me"),
   createLawyer: (lawyerData) => {
     console.log("Creating lawyer profile with data:", lawyerData);
     return api.post("/lawyers", lawyerData);

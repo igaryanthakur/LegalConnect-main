@@ -1,4 +1,5 @@
-import { userService } from "../services/api.js";
+import { userService, getProfileImageUrl } from "../services/api.js";
+import { showToast } from "../utils/toast.js";
 
 export async function renderUserProfilePage() {
   const mainContent = document.getElementById("main-content");
@@ -46,9 +47,9 @@ export async function renderUserProfilePage() {
         <div class="profile-container">
           <div class="profile-header">
             <div class="profile-image">
-              <img src="${userProfile?.profileImage || "/lawyer.png"}" alt="${
+              <img src="${getProfileImageUrl(userProfile?.profileImage)}" alt="${
       userProfile?.name || currentUser?.name
-    }">
+    }" onerror="this.src='/lawyer.png'">
               <button id="change-photo-btn" class="btn btn-sm btn-outline"><i class="fas fa-camera"></i> Change Photo</button>
             </div>
             <div class="profile-info">
@@ -190,6 +191,13 @@ async function loadUserConsultations() {
     // Render consultations
     consultationsContainer.innerHTML = renderConsultations(consultations);
 
+    // Pay button: placeholder until payment gateway is integrated
+    consultationsContainer.querySelectorAll(".pay-consultation-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        showToast("Payment gateway will be integrated soon. You can pay the consultation fee then.", "info");
+      });
+    });
+
     // Add filter functionality
     document.querySelectorAll(".consultation-filter-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -216,7 +224,7 @@ async function loadUserConsultations() {
   }
 }
 
-// Render consultations
+// Render consultations (with Pay fee for accepted; payment gateway placeholder)
 function renderConsultations(consultations) {
   if (!consultations || consultations.length === 0) {
     return `<div class="no-consultations">You don't have any consultations yet.</div>`;
@@ -224,10 +232,16 @@ function renderConsultations(consultations) {
 
   return consultations
     .map(
-      (consultation) => `
+      (consultation) => {
+        const fee =
+          consultation.lawyer?.consultationFee != null
+            ? Number(consultation.lawyer.consultationFee)
+            : 0;
+        const showPay = consultation.status === "accepted" && fee > 0;
+        return `
     <div class="consultation-item ${consultation.status}" data-status="${
-        consultation.status
-      }">
+          consultation.status
+        }">
       <div class="consultation-header">
         <div class="consultation-lawyer">
           <div class="profile-image-circle">
@@ -255,9 +269,20 @@ function renderConsultations(consultations) {
             ? `<p><strong>Message:</strong> ${consultation.message}</p>`
             : ""
         }
+        ${
+          showPay
+            ? `
+        <div class="consultation-pay-section">
+          <p><strong>Consultation fee:</strong> ₹${fee}</p>
+          <button type="button" class="btn btn-primary pay-consultation-btn" data-id="${consultation.id}">Pay now</button>
+        </div>
+        `
+            : ""
+        }
       </div>
     </div>
-  `
+  `;
+      }
     )
     .join("");
 }
@@ -406,7 +431,7 @@ function showEditProfileModal(user) {
               document.body.removeChild(modal);
 
               // Show success message
-              alert("Profile updated successfully!");
+              showToast("Profile updated successfully!", "success");
 
               // Reload the user profile page to reflect changes
               renderUserProfilePage();
@@ -546,7 +571,7 @@ function showEditProfileModal(user) {
               document.body.removeChild(modal);
 
               // Show success message
-              alert("Profile updated successfully!");
+              showToast("Profile updated successfully!", "success");
 
               // Reload the user profile page to reflect changes
               renderUserProfilePage();
@@ -579,9 +604,7 @@ function showChangePhotoModal(user) {
       <h2>Update Profile Photo</h2>
       <div class="profile-upload-container">
         <div class="profile-image-preview">
-          <img id="profile-preview" src="${
-            user.profileImage || "/lawyer.png"
-          }" alt="Profile preview">
+          <img id="profile-preview" src="${getProfileImageUrl(user?.profileImage)}" alt="Profile preview" onerror="this.src='/lawyer.png'">
         </div>
         <div class="upload-controls">
           <input type="file" id="profile-image" name="profileImage" accept="image/*" style="display: none;">
@@ -675,34 +698,29 @@ function showChangePhotoModal(user) {
           localStorage.setItem("user", JSON.stringify(userData));
         }
 
+        const displayUrl = getProfileImageUrl(userData.profileImage);
+        const cacheBust = `${displayUrl}${displayUrl.includes("?") ? "&" : "?"}t=${Date.now()}`;
+
         // Update the image directly on the page without full re-render
         const profileImages = document.querySelectorAll(".profile-image img");
         profileImages.forEach((img) => {
-          img.src = userData.profileImage;
-
-          // Force image reload to ensure updated display
-          img.onload = function () {
-            console.log("Profile image loaded successfully");
-          };
+          img.src = cacheBust;
           img.onerror = function () {
-            console.error(
-              "Failed to load profile image, falling back to default"
-            );
-            img.src = "/lawyer.png";
+            this.src = "/lawyer.png";
           };
         });
 
         // Update user profile icon in header if it exists
         const profileIcon = document.querySelector("#profile-icon img");
         if (profileIcon) {
-          profileIcon.src = userData.profileImage;
-          // Force image reload
-          const timestamp = new Date().getTime();
-          profileIcon.src = `${userData.profileImage}?t=${timestamp}`;
+          profileIcon.src = cacheBust;
+          profileIcon.onerror = function () {
+            this.src = "/lawyer.png";
+          };
         }
 
         // Close the modal and show message
-        alert("Profile image updated successfully!");
+        showToast("Profile image updated successfully!", "success");
         document.body.removeChild(modal);
       } else {
         throw new Error(response.data?.message || "Upload failed");

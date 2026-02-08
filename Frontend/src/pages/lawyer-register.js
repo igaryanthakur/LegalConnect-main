@@ -1,4 +1,5 @@
 import { lawyerService } from "../services/api.js";
+import { showToast } from "../utils/toast.js";
 
 export function renderLawyerRegisterPage() {
   const mainContent = document.getElementById("main-content");
@@ -317,14 +318,14 @@ export function renderLawyerRegisterPage() {
 
       // Check file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
-        alert("File is too large. Maximum size is 2MB.");
+        showToast("File is too large. Maximum size is 2MB.", "error");
         e.target.value = ""; // Reset the input
         return;
       }
 
       // Check file type
       if (!file.type.match("image/(jpeg|jpg|png)")) {
-        alert("Only JPG and PNG files are allowed.");
+        showToast("Only JPG and PNG files are allowed.", "error");
         e.target.value = ""; // Reset the input
         return;
       }
@@ -573,7 +574,7 @@ export function renderLawyerRegisterPage() {
           }
           localStorage.setItem("user", JSON.stringify(userData));
 
-          alert("Your lawyer profile has been created successfully!");
+          showToast("Your lawyer profile has been created successfully!", "success");
 
           // Redirect to lawyers page
           document.querySelector('a[data-page="lawyers"]').click();

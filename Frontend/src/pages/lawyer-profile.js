@@ -1,4 +1,5 @@
-import { lawyerService } from "../services/api.js";
+import { lawyerService, userService } from "../services/api.js";
+import { showToast } from "../utils/toast.js";
 
 function getProfileImageUrl(profileImage) {
   if (!profileImage || profileImage === "default-profile.png") {
@@ -7,7 +8,7 @@ function getProfileImageUrl(profileImage) {
   return profileImage;
 }
 
-export async function renderLawyerProfilePage(lawyerId) {
+export async function renderLawyerProfilePage(lawyerId, initialTab) {
   const mainContent = document.getElementById("main-content");
 
   // Show loading state
@@ -30,7 +31,9 @@ export async function renderLawyerProfilePage(lawyerId) {
     const currentUser = localStorage.getItem("user")
       ? JSON.parse(localStorage.getItem("user"))
       : null;
-    const isProfileOwner = currentUser && lawyer.userId === currentUser.id;
+    const isProfileOwner =
+      currentUser &&
+      String(lawyer.userId) === String(currentUser.id);
 
     // Fetch consultations if the current user is the lawyer
     let consultations = [];
@@ -44,6 +47,21 @@ export async function renderLawyerProfilePage(lawyerId) {
         console.error("Error fetching consultations:", error);
       }
     }
+
+    // For non-owner logged-in user: check if they have a paid consultation with this lawyer (show Contact only then)
+    let hasPaidConsultationWithLawyer = false;
+    if (currentUser && !isProfileOwner) {
+      try {
+        const userConsRes = await userService.getUserConsultations();
+        const userCons = userConsRes.data?.data || [];
+        hasPaidConsultationWithLawyer = userCons.some(
+          (c) => String(c.lawyer?.id) === String(lawyerId) && c.paid
+        );
+      } catch (_) {}
+    }
+
+    const openConsultationsTab =
+      initialTab === "consultations" && isProfileOwner;
 
     mainContent.innerHTML = `
       <section class="lawyer-profile-page">
@@ -79,33 +97,39 @@ export async function renderLawyerProfilePage(lawyerId) {
               isProfileOwner
                 ? `<button id="edit-profile-btn" class="btn btn-primary"><i class="fas fa-edit"></i> Edit Profile</button>`
                 : `<button class="btn btn-primary schedule-consultation-btn">Schedule Consultation</button>
-                 <button class="btn btn-outline contact-btn">Contact</button>`
+                 ${hasPaidConsultationWithLawyer ? `<button class="btn btn-outline contact-btn">Contact</button>` : ""}`
             }
           </div>
         </div>
         
         <div class="profile-tabs">
-          <button class="tab-btn active" data-tab="about">About</button>
+          <button class="tab-btn ${openConsultationsTab ? "" : "active"}" data-tab="about">About</button>
           <button class="tab-btn" data-tab="education">Education</button>
           <button class="tab-btn" data-tab="reviews">Reviews</button>
           ${
             isProfileOwner
-              ? '<button class="tab-btn" data-tab="consultations">Consultations</button>'
+              ? `<button class="tab-btn ${openConsultationsTab ? "active" : ""}" data-tab="consultations">Consultations</button>`
               : ""
           }
         </div>
         
         <div class="profile-content">
-          <div class="tab-content active" id="about-tab">
+          <div class="tab-content ${openConsultationsTab ? "" : "active"}" id="about-tab">
             <h2>About</h2>
             <p>${lawyer.bio || "No bio information available."}</p>
             
+            ${
+              isProfileOwner
+                ? `
             <h3>Contact Information</h3>
-            <p><strong>Address:</strong> ${lawyer.officeAddress.street}, ${
-      lawyer.officeAddress.city
-    }, ${lawyer.officeAddress.state} ${lawyer.officeAddress.zipCode}</p>
+            <p><strong>Address:</strong> ${lawyer.officeAddress.street}, ${lawyer.officeAddress.city}, ${lawyer.officeAddress.state} ${lawyer.officeAddress.zipCode}</p>
             <p><strong>Email:</strong> ${lawyer.email}</p>
             <p><strong>Phone:</strong> ${lawyer.phone || "Not provided"}</p>
+            `
+                : `
+            <p class="contact-info-hidden"><em>Contact details (email, phone, address) are shared after you complete a paid consultation—use the Contact button once your consultation is accepted and paid.</em></p>
+            `
+            }
             
             <h3>Bar Information</h3>
             <p><strong>Bar Council:</strong> ${
@@ -181,7 +205,7 @@ export async function renderLawyerProfilePage(lawyerId) {
           ${
             isProfileOwner
               ? `
-          <div class="tab-content" id="consultations-tab">
+          <div class="tab-content ${openConsultationsTab ? "active" : ""}" id="consultations-tab">
             <h2>Consultation Requests</h2>
             
             <div class="consultation-filters">
@@ -189,6 +213,7 @@ export async function renderLawyerProfilePage(lawyerId) {
               <button class="consultation-filter-btn" data-filter="pending">Pending</button>
               <button class="consultation-filter-btn" data-filter="accepted">Accepted</button>
               <button class="consultation-filter-btn" data-filter="rejected">Rejected</button>
+              <button class="consultation-filter-btn" data-filter="rescheduled">Rescheduled</button>
               <button class="consultation-filter-btn" data-filter="completed">Completed</button>
             </div>
             
@@ -237,12 +262,24 @@ export async function renderLawyerProfilePage(lawyerId) {
       });
     }
 
-    // Schedule consultation button
+    // Schedule consultation button (require login)
     const scheduleBtn = document.querySelector(".schedule-consultation-btn");
     if (scheduleBtn) {
-      scheduleBtn.addEventListener("click", () =>
-        showSchedulingModal(lawyer.name, lawyerId)
-      );
+      scheduleBtn.addEventListener("click", () => {
+        const user = localStorage.getItem("user");
+        if (!user) {
+          showToast("Please log in to request a consultation.", "info");
+          document.getElementById("login-btn")?.click();
+          return;
+        }
+        showSchedulingModal(lawyer.name, lawyerId);
+      });
+    }
+
+    // Contact button: show lawyer contact details (only visible when user has paid consultation)
+    const contactBtn = document.querySelector(".contact-btn");
+    if (contactBtn) {
+      contactBtn.addEventListener("click", () => showContactModal(lawyer));
     }
 
     // Edit profile button
@@ -289,10 +326,11 @@ export async function renderLawyerProfilePage(lawyerId) {
             await lawyerService.updateConsultation(consultationId, {
               status: "accepted",
             });
-            renderLawyerProfilePage(lawyerId); // Refresh page to show updated status
+            window.dispatchEvent(new CustomEvent("consultations-updated"));
+            renderLawyerProfilePage(lawyerId, "consultations");
           } catch (error) {
             console.error("Error accepting consultation:", error);
-            alert("Failed to accept consultation. Please try again.");
+            showToast("Failed to accept consultation. Please try again.", "error");
           }
         });
       });
@@ -304,10 +342,11 @@ export async function renderLawyerProfilePage(lawyerId) {
             await lawyerService.updateConsultation(consultationId, {
               status: "rejected",
             });
-            renderLawyerProfilePage(lawyerId); // Refresh page to show updated status
+            window.dispatchEvent(new CustomEvent("consultations-updated"));
+            renderLawyerProfilePage(lawyerId, "consultations");
           } catch (error) {
             console.error("Error rejecting consultation:", error);
-            alert("Failed to reject consultation. Please try again.");
+            showToast("Failed to reject consultation. Please try again.", "error");
           }
         });
       });
@@ -480,7 +519,7 @@ function showReviewModal(lawyerId) {
         });
 
         if (response.data.success) {
-          alert("Your review has been submitted successfully!");
+          showToast("Your review has been submitted successfully!", "success");
           document.body.removeChild(modal);
           // Reload the page to show the new review
           renderLawyerProfilePage(lawyerId);
@@ -504,6 +543,31 @@ function showReviewModal(lawyerId) {
         submitBtn.innerHTML = "Submit Review";
       }
     });
+}
+
+// Show lawyer contact details (for clients who have a paid consultation)
+function showContactModal(lawyer) {
+  const addr = lawyer.officeAddress || {};
+  const addressParts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
+  const addressStr = addressParts.length ? addressParts.join(", ") : "Not provided";
+  const modal = document.createElement("div");
+  modal.classList.add("modal");
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>${lawyer.name} – Contact Details</h2>
+      <div class="contact-details-modal">
+        <p><strong><i class="fas fa-envelope"></i> Email:</strong> <a href="mailto:${lawyer.email}">${lawyer.email}</a></p>
+        <p><strong><i class="fas fa-phone"></i> Phone:</strong> ${lawyer.phone ? `<a href="tel:${lawyer.phone}">${lawyer.phone}</a>` : "Not provided"}</p>
+        <p><strong><i class="fas fa-map-marker-alt"></i> Address:</strong><br>${addressStr}</p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.querySelector(".close").addEventListener("click", () => document.body.removeChild(modal));
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) document.body.removeChild(modal);
+  });
 }
 
 // Show scheduling modal
@@ -565,13 +629,40 @@ function showSchedulingModal(lawyerName, lawyerId) {
     }
   });
 
-  // Handle form submit
-  document.getElementById("scheduling-form").addEventListener("submit", (e) => {
+  // Handle form submit - create consultation via API
+  document.getElementById("scheduling-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    alert(
-      `Consultation request sent to ${lawyerName}. They will contact you to confirm.`
-    );
-    document.body.removeChild(modal);
+    const dateEl = document.getElementById("consultation-date");
+    const timeEl = document.getElementById("consultation-time");
+    const typeEl = document.getElementById("consultation-type");
+    const notesEl = document.getElementById("consultation-notes");
+    const submitBtn = modal.querySelector('button[type="submit"]');
+
+    const date = dateEl?.value;
+    const time = timeEl?.value;
+    const type = typeEl?.value;
+    const notes = (notesEl?.value || "").trim();
+
+    if (!date || !time || !type) {
+      showToast("Please fill in date, time, and consultation type.", "error");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending...";
+    try {
+      await lawyerService.scheduleConsultation(lawyerId, { date, time, type, notes: notes || undefined });
+      document.body.removeChild(modal);
+      showToast(`Consultation request sent to ${lawyerName}. They will confirm or respond soon.`, "success");
+    } catch (err) {
+      console.error("Schedule consultation error:", err);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Request Consultation";
+      const msg = err.response?.status === 401
+        ? "Please log in to request a consultation."
+        : (err.response?.data?.message || "Failed to send request. Please try again.");
+      showToast(msg, "error");
+    }
   });
 }
 
@@ -687,7 +778,7 @@ function showChangePhotoModal(lawyer, lawyerId) {
         }
 
         // Reload the page to show the updated profile image
-        alert("Profile image updated successfully!");
+        showToast("Profile image updated successfully!", "success");
         renderLawyerProfilePage(lawyerId);
         document.body.removeChild(modal);
       } else {
@@ -1212,7 +1303,7 @@ function showEditProfileModal(lawyer, lawyerId) {
         );
 
         if (response.data.success) {
-          alert("Your profile has been updated successfully!");
+          showToast("Your profile has been updated successfully!", "success");
           document.body.removeChild(modal);
           renderLawyerProfilePage(lawyerId);
         } else {
@@ -1383,12 +1474,13 @@ function showRescheduleModal(consultationId, lawyerId) {
           message,
         });
 
-        alert("Reschedule request sent to client.");
+        showToast("Reschedule request sent to client.", "success");
         document.body.removeChild(modal);
-        renderLawyerProfilePage(lawyerId); // Refresh page to show updated status
+        window.dispatchEvent(new CustomEvent("consultations-updated"));
+        renderLawyerProfilePage(lawyerId, "consultations");
       } catch (error) {
         console.error("Error rescheduling consultation:", error);
-        alert("Failed to reschedule consultation. Please try again.");
+        showToast("Failed to reschedule consultation. Please try again.", "error");
       }
     });
 }

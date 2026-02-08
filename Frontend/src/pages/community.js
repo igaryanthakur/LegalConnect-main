@@ -1,21 +1,7 @@
 // Import the community service, admin service, and WebSocket service
 import { communityService, adminService } from "../services/api.js";
 import { communityWebSocket } from "../services/websocket.js";
-
-function showToast(message) {
-  const existing = document.getElementById("community-toast");
-  if (existing) existing.remove();
-  const toast = document.createElement("div");
-  toast.id = "community-toast";
-  toast.className = "community-toast";
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.classList.add("show"), 10);
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, 2500);
-}
+import { showToast } from "../utils/toast.js";
 
 export function renderCommunityPage(initialTopicId = null) {
   const mainContent = document.getElementById("main-content");
@@ -576,7 +562,7 @@ async function viewTopic(topicId) {
     // Check if user is logged in
     const user = localStorage.getItem("user");
     if (!user) {
-      alert("Please log in to comment on discussions.");
+      showToast("Please log in to comment on discussions.", "info");
       return;
     }
 
@@ -592,7 +578,7 @@ async function viewTopic(topicId) {
         loadComments(topicId);
       } catch (error) {
         console.error("Error submitting comment:", error);
-        alert("Failed to submit your comment. Please try again.");
+        showToast("Failed to submit your comment. Please try again.", "error");
       }
     }
   });
@@ -953,7 +939,7 @@ function setupCommentEventListeners(topicId) {
     btn.addEventListener("click", (e) => {
       // Check if user is logged in
       if (!localStorage.getItem("user")) {
-        alert("Please log in to reply to comments.");
+        showToast("Please log in to reply to comments.", "info");
         return;
       }
 
@@ -1005,7 +991,7 @@ function setupCommentEventListeners(topicId) {
           // Form will be removed when comments are reloaded
         } catch (error) {
           console.error("Error submitting reply:", error);
-          alert("Failed to post reply. Please try again.");
+          showToast("Failed to post reply. Please try again.", "error");
 
           // Reset button state
           form.querySelector("button[type='submit']").disabled = false;
@@ -1020,7 +1006,7 @@ function setupCommentEventListeners(topicId) {
   document.querySelectorAll(".comment .vote-up-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!localStorage.getItem("user")) {
-        alert("Please log in to vote on comments.");
+        showToast("Please log in to vote on comments.", "info");
         return;
       }
 
@@ -1038,7 +1024,7 @@ function setupCommentEventListeners(topicId) {
   document.querySelectorAll(".comment .vote-down-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!localStorage.getItem("user")) {
-        alert("Please log in to vote on comments.");
+        showToast("Please log in to vote on comments.", "info");
         return;
       }
 
@@ -1192,7 +1178,7 @@ async function voteTopic(topicId, direction) {
   try {
     // Check if user is logged in
     if (!localStorage.getItem("user")) {
-      alert("Please log in to vote on topics.");
+      showToast("Please log in to vote on topics.", "info");
       return;
     }
 
@@ -1209,7 +1195,7 @@ async function voteTopic(topicId, direction) {
     // The UI will be updated by the WebSocket event
   } catch (error) {
     console.error(`Error ${direction}voting topic:`, error);
-    alert(`Failed to ${direction}vote. ${error.message}`);
+    showToast(`Failed to ${direction}vote. ${error.message}`, "error");
   }
 }
 
@@ -1218,7 +1204,7 @@ async function voteComment(topicId, commentId, direction) {
   try {
     // Check if user is logged in
     if (!localStorage.getItem("user")) {
-      alert("Please log in to vote on comments.");
+      showToast("Please log in to vote on comments.", "info");
       return;
     }
 
@@ -1236,7 +1222,7 @@ async function voteComment(topicId, commentId, direction) {
     // The UI will be updated by the WebSocket event
   } catch (error) {
     console.error(`Error ${direction}voting comment:`, error);
-    alert(`Failed to ${direction}vote. ${error.message}`);
+    showToast(`Failed to ${direction}vote. ${error.message}`, "error");
   }
 }
 
@@ -1244,7 +1230,7 @@ async function voteComment(topicId, commentId, direction) {
 function showNewTopicModal() {
   // Check if user is logged in
   if (!localStorage.getItem("user")) {
-    alert("Please log in to create a new topic.");
+    showToast("Please log in to create a new topic.", "info");
     return;
   }
 
@@ -1358,7 +1344,7 @@ function showNewTopicModal() {
         document.body.removeChild(modal);
 
         // Show success message
-        alert("Topic created successfully!");
+        showToast("Topic created successfully!", "success");
 
         // If we're already on the topics list page, refresh it
         if (document.querySelector(".topics-list")) {

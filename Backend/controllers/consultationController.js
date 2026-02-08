@@ -3,12 +3,37 @@ import UserModel from "../models/User.js";
 import LawyerModel from "../models/Lawyer.js";
 
 /**
+ * Mark consultations as completed when their date+time has passed (status: accepted).
+ * Call before returning lawyer or client consultation lists.
+ */
+async function markPastConsultationsCompleted() {
+  const accepted = await ConsultationModel.find({
+    status: "accepted",
+  });
+  const now = new Date();
+  for (const c of accepted) {
+    const d = new Date(c.date);
+    const parts = String(c.time || "00:00").trim().split(":");
+    const hours = parseInt(parts[0], 10) || 0;
+    const minutes = parseInt(parts[1], 10) || 0;
+    d.setHours(hours, minutes, 0, 0);
+    if (d <= now) {
+      await ConsultationModel.findByIdAndUpdate(c._id, {
+        status: "completed",
+      });
+    }
+  }
+}
+
+/**
  * @desc    Get all consultations for a lawyer
  * @route   GET /api/lawyers/:id/consultations
  * @access  Private/Lawyer
  */
 export const getLawyerConsultations = async (req, res) => {
   try {
+    await markPastConsultationsCompleted();
+
     // Verify that the logged-in user is the lawyer
     const lawyer = await LawyerModel.findById(req.params.id);
     if (!lawyer) {
@@ -36,23 +61,28 @@ export const getLawyerConsultations = async (req, res) => {
         select: "name email profileImage",
       });
 
-    // Format consultations for the frontend
-    const formattedConsultations = consultations.map((consultation) => ({
-      id: consultation._id,
-      date: consultation.date,
-      time: consultation.time,
-      type: consultation.type,
-      notes: consultation.notes,
-      status: consultation.status,
-      message: consultation.message,
-      client: {
-        id: consultation.client._id,
-        name: consultation.client.name,
-        email: consultation.client.email,
-        profileImage: consultation.client.profileImage,
-      },
-      createdAt: consultation.createdAt,
-    }));
+    // Format consultations for the frontend (guard against missing client)
+    const formattedConsultations = consultations.map((consultation) => {
+      const client = consultation.client;
+      return {
+        id: consultation._id,
+        date: consultation.date,
+        time: consultation.time,
+        type: consultation.type,
+        notes: consultation.notes,
+        status: consultation.status,
+        message: consultation.message,
+        client: client
+          ? {
+              id: client._id,
+              name: client.name,
+              email: client.email,
+              profileImage: client.profileImage,
+            }
+          : { id: null, name: "Unknown", email: "", profileImage: null },
+        createdAt: consultation.createdAt,
+      };
+    });
 
     res.json({
       success: true,
@@ -76,18 +106,21 @@ export const getLawyerConsultations = async (req, res) => {
  */
 export const getClientConsultations = async (req, res) => {
   try {
-    // Get consultations for the logged-in client
+    await markPastConsultationsCompleted();
+
+    // Get consultations for the logged-in client (populate lawyer with consultationFee for payment)
     const consultations = await ConsultationModel.find({ client: req.user.id })
       .sort({ createdAt: -1 })
       .populate({
         path: "lawyer",
+        select: "consultationFee user",
         populate: {
           path: "user",
           select: "name email profileImage",
         },
       });
 
-    // Format consultations for the frontend
+    // Format consultations for the frontend (include consultationFee for pay flow)
     const formattedConsultations = consultations.map((consultation) => ({
       id: consultation._id,
       date: consultation.date,
@@ -100,7 +133,9 @@ export const getClientConsultations = async (req, res) => {
         id: consultation.lawyer._id,
         name: consultation.lawyer.user.name,
         profileImage: consultation.lawyer.user.profileImage,
+        consultationFee: consultation.lawyer.consultationFee ?? 0,
       },
+      paid: consultation.paid ?? false,
       createdAt: consultation.createdAt,
     }));
 
@@ -180,8 +215,12 @@ export const updateConsultationStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
-    // Validate status
-    if (!["pending", "accepted", "rejected", "completed"].includes(status)) {
+    // Validate status (rescheduled = postponed by lawyer)
+    if (
+      !["pending", "accepted", "rejected", "completed", "rescheduled"].includes(
+        status
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid status",

@@ -898,6 +898,19 @@ button:disabled {
   max-height: 85vh;
 }
 
+.contact-details-modal p {
+  margin: 0.75rem 0;
+}
+.contact-details-modal a {
+  color: var(--primary-color);
+}
+
+.contact-info-hidden {
+  color: var(--gray-text);
+  font-size: 0.95rem;
+  margin: 1rem 0;
+}
+
 .modal-actions {
   margin-top: 20px;
   display: flex;
@@ -1179,6 +1192,15 @@ button:disabled {
   margin-bottom: 1rem;
 }
 
+.consultation-pay-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+.consultation-pay-section .pay-consultation-btn {
+  margin-top: 0.5rem;
+}
+
 .consultation-client {
   display: flex;
   align-items: center;
@@ -1310,10 +1332,46 @@ button:disabled {
 }
 
 /* User profile display in navbar/header */
+.header-auth-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .user-profile .profile-image-circle {
   width: 30px;
   height: 30px;
   margin-right: 8px;
+}
+/* Notification bell for lawyers (pending consultations) */
+.notification-bell-wrap {
+  position: relative;
+  color: var(--dark-color);
+  font-size: 1.25rem;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.notification-bell-wrap:hover {
+  color: var(--primary-color);
+}
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--danger-color);
+  border-radius: 10px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 /* Footer contact links */
@@ -2591,6 +2649,47 @@ body {
 }
 
 .admin-toast-info {
+  background: var(--dark-color);
+  color: white;
+}
+
+/* Global toast messages (replaces alert) */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+#toast-container .toast {
+  pointer-events: auto;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  max-width: 90vw;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  cursor: pointer;
+}
+#toast-container .toast.toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+#toast-container .toast-success {
+  background: var(--success-color);
+  color: white;
+}
+#toast-container .toast-error {
+  background: var(--danger-color);
+  color: white;
+}
+#toast-container .toast-info {
   background: var(--dark-color);
   color: white;
 }

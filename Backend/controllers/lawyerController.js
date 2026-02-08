@@ -325,6 +325,36 @@ export const uploadLawyerProfileImage = async (req, res) => {
 };
 
 /**
+ * @desc    Get current user's lawyer profile id (for lawyers only)
+ * @route   GET /api/lawyers/me
+ * @access  Private
+ */
+export const getMyLawyerProfile = async (req, res) => {
+  try {
+    const lawyer = await LawyerModel.findOne({ user: req.user.id }).select(
+      "_id"
+    );
+    if (!lawyer) {
+      return res.status(404).json({
+        success: false,
+        message: "No lawyer profile found for this user",
+      });
+    }
+    res.json({
+      success: true,
+      data: { id: lawyer._id },
+    });
+  } catch (error) {
+    console.error("Get my lawyer profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
  * @desc    Get lawyer by ID
  * @route   GET /api/lawyers/:id
  * @access  Public
@@ -351,9 +381,10 @@ export const getLawyerById = async (req, res) => {
         ? lawyer.user.profileImage
         : "/lawyer.png";
 
-    // Format response data
+    // Format response data (userId so frontend can detect profile owner and show Consultations tab)
     const lawyerData = {
       id: lawyer._id,
+      userId: lawyer.user._id.toString(),
       name: lawyer.user.name,
       email: lawyer.user.email,
       profileImage,

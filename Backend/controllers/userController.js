@@ -124,13 +124,28 @@ export const loginUser = async (req, res) => {
  */
 export const getUserProfile = async (req, res) => {
   try {
-    // For now, return a placeholder response
-    // In a real app, this would use the authenticated user
+    const user = await UserModel.findById(req.user.id)
+      .select("-password")
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     res.json({
       success: true,
       data: {
-        message:
-          "User profile feature will be implemented with proper authentication",
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+        location: user.location,
+        bio: user.bio,
+        profileImage: user.profileImage,
       },
     });
   } catch (error) {

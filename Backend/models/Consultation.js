@@ -32,6 +32,10 @@ const consultationSchema = new mongoose.Schema({
     enum: ["pending", "accepted", "rejected", "completed", "rescheduled"],
     default: "pending",
   },
+  paid: {
+    type: Boolean,
+    default: false,
+  },
   message: {
     type: String,
   },

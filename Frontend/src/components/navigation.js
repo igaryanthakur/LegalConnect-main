@@ -71,7 +71,7 @@ export function navigateTo(page, params, skipPushState = false) {
       renderLawyerRegisterPage();
       break;
     case "lawyer-profile":
-      renderLawyerProfilePage(safeParams.id);
+      renderLawyerProfilePage(safeParams.id, safeParams.tab);
       break;
     case "user-profile":
       renderUserProfilePage();
@@ -106,20 +106,18 @@ export function setupNavigation() {
     }
   });
 
-  const navLinks = document.querySelectorAll("#main-nav a");
-
-  navLinks.forEach((link) => {
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-
-      const page = link.getAttribute("data-page");
-      navigateTo(page);
-    });
-  });
-
+  // Use event delegation: any link with data-page (header nav, footer quick links, etc.) triggers navigation
   document.addEventListener("click", function (e) {
-    const profileIcon = e.target.closest("#profile-icon");
+    const link = e.target.closest("a[data-page]");
+    if (link) {
+      e.preventDefault();
+      const page = link.getAttribute("data-page");
+      if (page) navigateTo(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
 
+    const profileIcon = e.target.closest("#profile-icon");
     if (profileIcon) {
       e.preventDefault();
       navigateTo("user-profile");
