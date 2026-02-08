@@ -32,9 +32,14 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543210",
-    bio: "Specializing in family law disputes and Employment issues with 8 years of experience.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/1.jpg",
+    consultationFee: 0,
+    availability: [
+      { day: "Monday", startTime: "09:00", endTime: "17:00" },
+      { day: "Wednesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Friday", startTime: "09:00", endTime: "15:00" },
+    ],
   },
   {
     name: "Priya Sharma",
@@ -59,9 +64,14 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543211",
-    bio: "Expert in tenant rights and housing disputes. Advocate for underprivileged communities.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/2.jpg",
+    consultationFee: 1200,
+    availability: [
+      { day: "Monday", startTime: "10:00", endTime: "18:00" },
+      { day: "Tuesday", startTime: "10:00", endTime: "18:00" },
+      { day: "Thursday", startTime: "10:00", endTime: "16:00" },
+    ],
   },
   {
     name: "Vikram Patel",
@@ -86,9 +96,15 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543212",
-    bio: "Criminal defense specialist with 11 years of courtroom experience.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/3.jpg",
+    consultationFee: 3500,
+    availability: [
+      { day: "Monday", startTime: "09:00", endTime: "17:00" },
+      { day: "Tuesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Wednesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Thursday", startTime: "09:00", endTime: "17:00" },
+    ],
   },
   {
     name: "Anjali Gupta",
@@ -113,9 +129,14 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543213",
-    bio: "Immigration law specialist helping people navigate visa and legal status issues.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/5.jpg",
+    consultationFee: 500,
+    availability: [
+      { day: "Tuesday", startTime: "10:00", endTime: "18:00" },
+      { day: "Wednesday", startTime: "10:00", endTime: "18:00" },
+      { day: "Friday", startTime: "10:00", endTime: "16:00" },
+    ],
   },
   {
     name: "Rohan Singh",
@@ -140,9 +161,14 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543214",
-    bio: "Employment law advocate with focus on workers rights and workplace discrimination.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/6.jpg",
+    consultationFee: 2000,
+    availability: [
+      { day: "Monday", startTime: "09:00", endTime: "17:00" },
+      { day: "Wednesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Thursday", startTime: "09:00", endTime: "17:00" },
+    ],
   },
   {
     name: "Neha Reddy",
@@ -167,9 +193,14 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543215",
-    bio: "Family law attorney specializing in divorce, custody, and support cases.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/7.jpg",
+    consultationFee: 800,
+    availability: [
+      { day: "Tuesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Thursday", startTime: "09:00", endTime: "17:00" },
+      { day: "Saturday", startTime: "10:00", endTime: "14:00" },
+    ],
   },
   {
     name: "Arjun Desai",
@@ -194,9 +225,14 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543216",
-    bio: "Housing rights advocate and criminal defense specialist serving East Mumbai.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/8.jpg",
+    consultationFee: 1500,
+    availability: [
+      { day: "Monday", startTime: "10:00", endTime: "18:00" },
+      { day: "Wednesday", startTime: "10:00", endTime: "18:00" },
+      { day: "Friday", startTime: "10:00", endTime: "18:00" },
+    ],
   },
   {
     name: "Divya Mittal",
@@ -221,9 +257,14 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543217",
-    bio: "Consumer rights and civil liberties advocate with passion for social justice.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/9.jpg",
+    consultationFee: 0,
+    availability: [
+      { day: "Monday", startTime: "11:00", endTime: "17:00" },
+      { day: "Thursday", startTime: "11:00", endTime: "17:00" },
+      { day: "Saturday", startTime: "09:00", endTime: "13:00" },
+    ],
   },
   {
     name: "Karthik Nair",
@@ -248,9 +289,15 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543218",
-    bio: "Immigration law specialist helping individuals and businesses with visa and compliance issues.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/10.jpg",
+    consultationFee: 2500,
+    availability: [
+      { day: "Tuesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Wednesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Thursday", startTime: "09:00", endTime: "17:00" },
+      { day: "Friday", startTime: "09:00", endTime: "15:00" },
+    ],
   },
   {
     name: "Swati Verma",
@@ -275,9 +322,16 @@ const demoLawyers = [
       country: "India",
     },
     phone: "+91-9876543219",
-    bio: "Multispecialty attorney serving families and tenants across Mumbai for 13 years.",
     profileImage:
       "https://ik.imagekit.io/igaryanthakur/legalconnect/profiles/1.jpg",
+    consultationFee: 1800,
+    availability: [
+      { day: "Monday", startTime: "09:00", endTime: "17:00" },
+      { day: "Tuesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Wednesday", startTime: "09:00", endTime: "17:00" },
+      { day: "Thursday", startTime: "09:00", endTime: "17:00" },
+      { day: "Friday", startTime: "09:00", endTime: "15:00" },
+    ],
   },
 ];
 
@@ -326,8 +380,9 @@ async function seedLawyers() {
           barNumber: lawyerData.barNumber,
           languages: lawyerData.languages,
           officeAddress: lawyerData.address,
-          description: lawyerData.bio,
-          phoneNumber: lawyerData.phone,
+          consultationFee: lawyerData.consultationFee,
+          availability: lawyerData.availability,
+          isVerified: true,
         });
 
         createdLawyers.push({

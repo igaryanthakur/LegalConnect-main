@@ -1,7 +1,6 @@
 import { userService, lawyerService, getProfileImageUrl } from "./api.js";
 import { showToast } from "../utils/toast.js";
 import { navigateTo } from "../components/navigation.js";
-import { translate } from "../utils/translations.js";
 import { loginSchema, signupSchema } from "../utils/formValidation.js";
 
 export function setupAuth() {
@@ -40,12 +39,8 @@ export function setupAuth() {
             user.name
           }" onerror="this.src='/lawyer.png'" crossorigin="anonymous">
         </div>
-        <span><span data-i18n="welcome">${translate("welcome")}</span>, ${
-          user.name
-        }</span>
-        <button id="logout-btn" class="btn btn-outline" data-i18n="logout">${translate(
-          "logout",
-        )}</button>
+        <span>Welcome, ${user.name}</span>
+        <button id="logout-btn" class="btn btn-outline">Logout</button>
       </div>
     `;
 

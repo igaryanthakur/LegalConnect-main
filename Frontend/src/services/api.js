@@ -1,5 +1,4 @@
 import axios from "axios";
-import { getCurrentLanguage } from "../utils/translations.js";
 
 // Backend base URL must end with /api so routes like /users/login become /api/users/login
 function normalizeApiBaseUrl(url) {
@@ -39,7 +38,6 @@ const api = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
-    "Accept-Language": getCurrentLanguage() || "en",
   },
 });
 
@@ -59,9 +57,6 @@ api.interceptors.request.use(
         localStorage.removeItem("user");
       }
     }
-    // Always use the current language - only en or hi now
-    const currentLang = getCurrentLanguage();
-    config.headers["Accept-Language"] = currentLang;
     return config;
   },
   (error) => Promise.reject(error),

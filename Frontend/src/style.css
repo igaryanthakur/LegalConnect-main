@@ -1637,7 +1637,7 @@ button:disabled {
   color: #666;
 }
 
-/* Language Selector Styles - simplified */
+/* Header right controls */
 .right-nav-controls {
   display: flex;
   align-items: center;
@@ -1645,91 +1645,6 @@ button:disabled {
   flex-shrink: 0;
 }
 
-.language-selector {
-  position: relative;
-}
-
-.language-btn {
-  background-color: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 0.45rem 0.7rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--text-color);
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
-}
-
-.language-btn:hover {
-  background-color: #f0f0f0;
-}
-
-.language-btn i {
-  font-size: 1rem;
-  color: var(--primary-color);
-}
-
-.language-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background-color: white;
-  min-width: 140px; /* Reduced width as we only have two options */
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  z-index: 200;
-  border-radius: 4px;
-  overflow: hidden;
-  display: none;
-  margin-top: 0.5rem;
-}
-
-.language-dropdown.show {
-  display: block;
-}
-
-.language-dropdown-content {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.language-option {
-  padding: 10px 15px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  gap: 8px;
-  position: relative;
-}
-
-.language-option:hover {
-  background-color: #f5f5f5;
-}
-
-.language-option.active {
-  background-color: #e9f5ff;
-  font-weight: 500;
-  color: var(--primary-color);
-}
-
-.language-flag {
-  font-size: 1.2rem;
-}
-
-.language-name {
-  font-size: 0.9rem;
-}
-
-.current-language {
-  font-size: 0.75rem;
-  font-weight: 500;
-  opacity: 0.8;
-}
-
-/* Responsive styles for language selector */
 @media (max-width: 768px) {
   .right-nav-controls {
     flex-direction: column;
@@ -1737,72 +1652,6 @@ button:disabled {
     gap: 0.5rem;
     margin-top: 1rem;
   }
-
-  .language-selector {
-    align-self: flex-end;
-  }
-}
-
-/* Translation loading overlay - simplified version */
-.translation-loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.3);
-  z-index: 10000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.translation-loading-spinner {
-  background-color: white;
-  padding: 20px 30px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  min-width: 250px;
-  text-align: center;
-}
-
-.translation-loading-spinner i {
-  font-size: 2rem;
-  color: var(--primary-color);
-}
-
-/* Google Translate overrides */
-.goog-te-banner-frame {
-  display: none !important;
-}
-
-.skiptranslate {
-  display: none !important;
-}
-
-body {
-  top: 0 !important;
-}
-
-/* Add translation status indicator */
-.translation-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
-  padding: 2px 5px;
-  background-color: #e3f2fd;
-  border-radius: 3px;
-  margin-left: 4px;
-  vertical-align: middle;
-}
-
-.translation-status .fa-check {
-  color: var(--success-color);
 }
 
 .translation-status .fa-spinner {

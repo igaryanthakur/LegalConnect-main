@@ -3,11 +3,22 @@ import crypto from "crypto";
 import ConsultationModel from "../models/Consultation.js";
 import LawyerModel from "../models/Lawyer.js";
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Lazily initialize Razorpay to avoid crashing on cold start if env vars are missing
+const getRazorpayClient = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    const error = new Error("Razorpay keys are not configured");
+    error.code = "RAZORPAY_KEYS_MISSING";
+    throw error;
+  }
+
+  return new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
+};
 
 /**
  * @desc    Create Razorpay order for consultation payment
@@ -16,6 +27,7 @@ const razorpay = new Razorpay({
  */
 export const createPaymentOrder = async (req, res) => {
   try {
+    const razorpay = getRazorpayClient();
     const { consultationId } = req.body;
 
     if (!consultationId) {
@@ -129,6 +141,7 @@ export const createPaymentOrder = async (req, res) => {
  */
 export const verifyPayment = async (req, res) => {
   try {
+    getRazorpayClient();
     const {
       razorpayOrderId,
       razorpayPaymentId,

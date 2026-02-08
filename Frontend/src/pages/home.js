@@ -1,32 +1,22 @@
-import { translate } from "../utils/translations.js";
-
 export function renderHomePage() {
   const mainContent = document.getElementById("main-content");
 
   mainContent.innerHTML = `
     <section class="hero">
-      <h2 data-i18n="heroTitle">${translate("heroTitle")}</h2>
-      <p data-i18n="heroDescription">${translate("heroDescription")}</p>
+      <h2>Access to Legal Aid Made Simple</h2>
+      <p>Connect with affordable legal services and pro bono lawyers. Get the legal help you need.</p>
       <div class="hero-buttons">
-        <button class="btn btn-light" id="find-lawyer-btn" data-i18n="findLawyer">${translate(
-          "findLawyer"
-        )}</button>
-        <button class="btn btn-outline-light" id="ask-ai-btn" data-i18n="askAi">${translate(
-          "askAi"
-        )}</button>
+        <button class="btn btn-light" id="find-lawyer-btn">Find a Lawyer</button>
+        <button class="btn btn-outline-light" id="ask-ai-btn">Ask AI Assistant</button>
       </div>
     </section>
     <section>
-      <h2 class="section-title" data-i18n="ourServices">${translate(
-        "ourServices"
-      )}</h2>
+      <h2 class="section-title">Our Services</h2>
       <div class="features-grid">
         <a class="card1" href="#" id="lawyer-directory-card">
           <i class="fas fa-user-tie"></i>
-          <h3 data-i18n="lawyerDirectory">${translate("lawyerDirectory")}</h3>
-          <p class="small" data-i18n="lawyerDirectoryDesc">${translate(
-            "lawyerDirectoryDesc"
-          )}</p>
+          <h3>Lawyer Directory</h3>
+          <p class="small">Find and connect with pro bono lawyers and affordable legal services in your area.</p>
           <div class="go-corner">
             <div class="go-arrow">→</div>
           </div>
@@ -34,12 +24,8 @@ export function renderHomePage() {
         
         <a class="card1" href="#" id="ai-assistant-card">
           <i class="fas fa-robot"></i>
-          <h3 data-i18n="aiAssistantService">${translate(
-            "aiAssistantService"
-          )}</h3>
-          <p class="small" data-i18n="aiAssistantDesc">${translate(
-            "aiAssistantDesc"
-          )}</p>
+          <h3>AI Legal Assistant</h3>
+          <p class="small">Get instant answers to common legal questions through our AI-powered assistant.</p>
           <div class="go-corner">
             <div class="go-arrow">→</div>
           </div>
@@ -47,10 +33,8 @@ export function renderHomePage() {
         
         <a class="card1" href="#" id="resource-library-card">
           <i class="fas fa-book-open"></i>
-          <h3 data-i18n="resourceLibrary">${translate("resourceLibrary")}</h3>
-          <p class="small" data-i18n="resourceLibraryDesc">${translate(
-            "resourceLibraryDesc"
-          )}</p>
+          <h3>Resource Library</h3>
+          <p class="small">Access guides, documents, and educational materials on various legal topics.</p>
           <div class="go-corner">
             <div class="go-arrow">→</div>
           </div>
@@ -58,10 +42,8 @@ export function renderHomePage() {
         
         <a class="card1" href="#" id="community-forums-card">
           <i class="fas fa-comments"></i>
-          <h3 data-i18n="communityForums">${translate("communityForums")}</h3>
-          <p class="small" data-i18n="communityForumsDesc">${translate(
-            "communityForumsDesc"
-          )}</p>
+          <h3>Community Forums</h3>
+          <p class="small">Join discussions, share experiences, and learn from others facing similar legal issues.</p>
           <div class="go-corner">
             <div class="go-arrow">→</div>
           </div>
@@ -158,10 +140,8 @@ export function renderFooter() {
       <div class="container">
         <div class="footer-content">
           <div class="footer-section about">
-            <h2 data-i18n="aboutLegalConnect">${translate("aboutLegalConnect")}</h2>
-            <p data-i18n="aboutLegalConnectDesc">${translate(
-              "aboutLegalConnectDesc"
-            )}</p>
+            <h2>About LegalConnect</h2>
+            <p>LegalConnect connects those in need with pro bono lawyers and affordable legal services.</p>
             <div class="social-links">
               <a href="https://x.com/LegalConnect" target="_blank" class="social-link twitter-x">
                 <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512" fill="currentColor">
@@ -173,37 +153,25 @@ export function renderFooter() {
             </div>
           </div>
           <div class="footer-section links">
-            <h2 data-i18n="quickLinks">${translate("quickLinks")}</h2>
+            <h2>Quick Links</h2>
             <ul>
-              <li><a href="#" data-page="home" data-i18n="home">${translate(
-                "home"
-              )}</a></li>
-              <li><a href="#" data-page="lawyers" data-i18n="findLawyer">${translate(
-                "findLawyer"
-              )}</a></li>
-              <li><a href="#" data-page="resources" data-i18n="resources">${translate(
-                "resources"
-              )}</a></li>
-              <li><a href="#" data-page="community" data-i18n="community">${translate(
-                "community"
-              )}</a></li>
-              <li><a href="#" data-page="ai-assistant" data-i18n="aiAssistant">${translate(
-                "aiAssistant"
-              )}</a></li>
+              <li><a href="#" data-page="home">Home</a></li>
+              <li><a href="#" data-page="lawyers">Find a Lawyer</a></li>
+              <li><a href="#" data-page="resources">Resources</a></li>
+              <li><a href="#" data-page="community">Community</a></li>
+              <li><a href="#" data-page="ai-assistant">AI Assistant</a></li>
             </ul>
           </div>
           
           <div class="footer-section contact">
-            <h2 data-i18n="contactUs">${translate("contactUs")}</h2>
+            <h2>Contact Us</h2>
             <p><a href="tel:+919876543210" class="contact-link"><i class="fas fa-phone"></i> &nbsp; +91 9876543210</a></p>
             <p><a href="mailto:contact@legalconnect.org" class="contact-link"><i class="fas fa-envelope"></i> &nbsp; contact@legalconnect.org</a></p>
             <p><a href="https://maps.google.com/?q=123 Legal Street, Mumbai, India" target="_blank" class="contact-link location-link"><i class="fas fa-map-marker-alt"></i> &nbsp; 123 Legal Street, Mumbai, India</a></p>
           </div>
         </div>
         <div class="footer-bottom">
-          &copy; ${new Date().getFullYear()} LegalConnect | <span data-i18n="allRightsReserved">${translate(
-    "allRightsReserved"
-  )}</span>
+          &copy; ${new Date().getFullYear()} LegalConnect | All rights reserved
         </div>
       </div>
     </footer>
