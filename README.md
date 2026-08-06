@@ -4,7 +4,9 @@ LegalConnect is a comprehensive legal access platform designed to connect people
 
 ## 🌐 Live Demo
 
-Visit the live application at [https://legal-connect-main-frontend.vercel.app/](https://legal-connect-main-frontend.vercel.app/)
+Visit the live application at :
+1. [https://legalconnect.tech](https://legalconnect.tech/)
+2. [https://legal-connect-main-frontend.vercel.app/](https://legal-connect-main-frontend.vercel.app/)
 
 ## ✨ Features
 
